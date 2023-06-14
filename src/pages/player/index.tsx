@@ -104,7 +104,7 @@ export default function Player(props: VideoProps) {
   };
 
   const onProgress = (progress: OnProgressData) => {
-    setCurrentTime(Math.max(progress.currentTime, currentTime));
+    setCurrentTime(progress.currentTime);
   };
 
   const seekTo = (time: number = 0) => {
@@ -281,7 +281,7 @@ export default function Player(props: VideoProps) {
                 width: Dimensions.get('window').width,
                 alignItems: 'center',
                 paddingHorizontal: rpx(30),
-                marginBottom: rpx(30),
+                marginBottom: rpx(0),
               }}>
               {duration && duration > 0 && (
                 <View style={{flexDirection: 'row'}}>
@@ -289,7 +289,7 @@ export default function Player(props: VideoProps) {
                     {formatTime(currentTime)}
                   </Text>
                   <Slider
-                    style={{flex: 1, height: rpx(50)}}
+                    style={{flex: 1}}
                     minimumValue={0}
                     value={currentTime}
                     onSlidingStart={onSlidingStart}
@@ -307,18 +307,21 @@ export default function Player(props: VideoProps) {
                 style={{
                   flexDirection: 'row',
                   justifyContent: 'space-between',
-                  height: rpx(80),
+                  height: rpx(120),
                   width: '100%',
                 }}>
                 <View style={{flexDirection: 'row'}}>
                   <Icon
+                    onPress={() => setPaused(!paused)}
                     style={{
                       marginLeft: rpx(10),
                       paddingVertical: rpx(12),
                       color: '#fff',
                     }}
-                    name="cellphone"
-                    size={rpx(55)}
+                    name={
+                      paused ? 'play-circle-outline' : 'pause-circle-outline'
+                    }
+                    size={rpx(70)}
                   />
                   <Icon
                     style={{
@@ -326,8 +329,8 @@ export default function Player(props: VideoProps) {
                       paddingVertical: rpx(12),
                       color: '#fff',
                     }}
-                    name="cellphone"
-                    size={rpx(55)}
+                    name="arrow-right-bold-circle-outline"
+                    size={rpx(70)}
                   />
                 </View>
                 <View style={{flexDirection: 'row', alignItems: 'center'}}>
