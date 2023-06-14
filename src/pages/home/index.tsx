@@ -2,7 +2,7 @@ import rpx from '@/utils/rpx';
 import React, {useEffect, useRef, useState} from 'react';
 import {Image, StyleSheet, View} from 'react-native';
 import {ScrollView} from 'react-native-gesture-handler';
-import {Card, Text, TextInput} from 'react-native-paper';
+import {Avatar, Card, IconButton, Text, TextInput} from 'react-native-paper';
 import {WebView, WebViewMessageEvent} from 'react-native-webview';
 import Video from 'react-native-video';
 import axios from 'axios';
@@ -25,7 +25,7 @@ const styles = StyleSheet.create({
 
 export default function App() {
   const [html, setHtml] = useState<any>();
-  const [kw, setKw] = useState('');
+  const [kw, setKw] = useState('斗破');
   const [text, setText] = React.useState('');
   const webviewRef = useRef<WebView>(null);
   const injectedJavaScript = `
@@ -77,40 +77,7 @@ export default function App() {
     //   );
     // };
     // getHtmlContent();
-    // (async () => {
-    //   console.log('111');
-    //   const res = await searchMusic('明天', 1);
-    //   console.log('tttt');
-    //   console.log(res);
-    // })();
   }, []);
-
-  const searchHeaders = {
-    'User-Agent':
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36',
-    Host: 'search.5sing.kugou.com',
-    Accept: 'application/json, text/javascript, */*; q=0.01',
-    'Accept-Encoding': 'gzip, deflate',
-    'Accept-Language': 'zh-CN,zh;q=0.9',
-    Referer: 'http://search.5sing.kugou.com/home/index',
-  };
-
-  async function searchMusic(query: string, page: number) {
-    const res = (
-      await axios.get('http://search.5sing.kugou.com/home/json', {
-        headers: searchHeaders,
-        params: {
-          keyword: query,
-          sort: 1,
-          page,
-          filter: 0,
-          type: 0,
-        },
-      })
-    ).data;
-
-    return res;
-  }
 
   const searchUrl = 'https://www.yhdmz.org/s_all?ex=1&kw=';
 
@@ -128,16 +95,13 @@ export default function App() {
         />
       </View>
       {/* search */}
-      <View style={{display: 'flex', width: 300, height: 500}}>
+      <View style={{display: 'none'}}>
         <Text>{kw}</Text>
         {kw && (
           <WebView
             ref={webviewRef}
             style={{
-              display: 'flex',
-              width: 300,
-              height: 500,
-              backgroundColor: 'red',
+              display: 'none',
             }}
             source={{uri: `${searchUrl}${kw}`}}
             originWhitelist={['*']}
@@ -170,31 +134,14 @@ export default function App() {
         <View>
           {html &&
             (html as any[]).map(item => (
-              <Card>
-                <Card.Title title={item.title} />
-                <Card.Content>
-                  <Text variant="titleLarge">{item.title}</Text>
-                  <Text variant="bodyMedium">{item.href}</Text>
-                  <Text variant="bodyMedium">{item.pic}</Text>
-                </Card.Content>
-                <Card.Cover resizeMode="contain" source={{uri: item.pic}} />
-              </Card>
+              <Card.Title
+                key={item.href}
+                title={item.title}
+                left={props => (
+                  <Avatar.Image {...props} source={{uri: item.pic}} />
+                )}
+              />
             ))}
-        </View>
-        <View>
-          <Card.Cover
-            resizeMode="contain"
-            source={{
-              uri: 'https://pic.rmb.bdstatic.com/bjh/down/6650c68ce92cd85bb56b9ef7e411f43d.jpeg',
-            }}
-          />
-          <Image
-            style={{width: 100, height: 100}}
-            source={{
-              uri: 'https://pic.rmb.bdstatic.com/bjh/down/6650c68ce92cd85bb56b9ef7e411f43d.jpeg',
-              // uri: 'https://picsum.photos/700',
-            }}
-          />
         </View>
       </ScrollView>
     </View>
