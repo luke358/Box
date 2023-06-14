@@ -4,18 +4,17 @@ import {NavigationContainer} from '@react-navigation/native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import TabBar from '@/components/tabBar';
-import {StatusBar} from 'react-native';
 import {
   CardStyleInterpolators,
   createStackNavigator,
 } from '@react-navigation/stack';
 import {routes} from './router';
+import bootstrap from './bootstrap';
 
+bootstrap();
 const Stack = createStackNavigator<any>();
 
 const App = () => {
-  StatusBar.setBackgroundColor('#f6f6f6');
-  StatusBar.setBarStyle('dark-content');
   return (
     <GestureHandlerRootView style={{flex: 1}}>
       <PaperProvider>

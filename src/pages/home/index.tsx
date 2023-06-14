@@ -1,11 +1,19 @@
+import StatusBar from '@/components/base/statusBar';
+import {useNavigate} from '@/entry/router';
 import rpx from '@/utils/rpx';
-import React, {useEffect, useRef, useState} from 'react';
-import {Image, StyleSheet, View} from 'react-native';
+import React, {useRef, useState} from 'react';
+import {StyleSheet, View} from 'react-native';
 import {ScrollView} from 'react-native-gesture-handler';
-import {Avatar, Card, IconButton, Text, TextInput} from 'react-native-paper';
+import {
+  Avatar,
+  Card,
+  Text,
+  TextInput,
+  TouchableRipple,
+} from 'react-native-paper';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {WebView, WebViewMessageEvent} from 'react-native-webview';
-import Video from 'react-native-video';
-import axios from 'axios';
+
 const styles = StyleSheet.create({
   appWrapper: {
     flexDirection: 'column',
@@ -24,14 +32,12 @@ const styles = StyleSheet.create({
 });
 
 export default function App() {
+  const navigate = useNavigate();
   const [html, setHtml] = useState<any>();
   const [kw, setKw] = useState('斗破');
   const [text, setText] = React.useState('');
   const webviewRef = useRef<WebView>(null);
   const injectedJavaScript = `
-  // const iframeSrc = document.querySelector('iframe').src;
-  // const videoUrl = iframeSrc.match(/url=(.*)/)[1];
-  // window.ReactNativeWebView.postMessage(videoUrl);
   const lis = document.querySelectorAll('li.item')
   const data = Array.from(lis).map(li => {
     const href = li.querySelector('a').href;
@@ -48,10 +54,10 @@ export default function App() {
       href,pic,title
     }
   })
-  alert(document.documentElement.innerHTML
-    );
+  // alert(document.documentElement.innerHTML);
   window.ReactNativeWebView.postMessage(JSON.stringify(data));
 `;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const uri = 'https://www.yhdmz.org/vp/23131-1-0.html'; // 替换为你想要加载的网址
 
   const handleMessage = (event: WebViewMessageEvent) => {
@@ -60,33 +66,20 @@ export default function App() {
     setHtml(JSON.parse(receivedHtml));
   };
 
-  useEffect(() => {
-    // const getHtmlContent = async () => {
-    //   const handleMessage = (event: WebViewMessageEvent) => {
-    //     const receivedHtml = event.nativeEvent.data;
-    //     console.log('test');
-    //     setHtml(receivedHtml);
-    //   };
-    //   console.log(uri);
-    //   return (
-    //     <WebView
-    //       source={{uri}}
-    //       injectedJavaScript={injectedJavaScript}
-    //       onMessage={handleMessage}
-    //     />
-    //   );
-    // };
-    // getHtmlContent();
-  }, []);
-
   const searchUrl = 'https://www.yhdmz.org/s_all?ex=1&kw=';
 
   function onSubmitEditing() {
     setKw(text);
+    webviewRef.current?.clearCache?.(true);
     webviewRef.current?.reload();
   }
+
+  function handleDetail(item: any) {
+    navigate('detail', item);
+  }
   return (
-    <View style={styles.appWrapper}>
+    <SafeAreaView style={styles.appWrapper}>
+      <StatusBar />
       <View>
         <TextInput
           value={text}
@@ -104,6 +97,7 @@ export default function App() {
               display: 'none',
             }}
             source={{uri: `${searchUrl}${kw}`}}
+            userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1"
             originWhitelist={['*']}
             injectedJavaScript={injectedJavaScript}
             onMessage={handleMessage}
@@ -134,16 +128,19 @@ export default function App() {
         <View>
           {html &&
             (html as any[]).map(item => (
-              <Card.Title
+              <TouchableRipple
                 key={item.href}
-                title={item.title}
-                left={props => (
-                  <Avatar.Image {...props} source={{uri: item.pic}} />
-                )}
-              />
+                onPress={() => handleDetail(item)}>
+                <Card.Title
+                  title={item.title}
+                  left={props => (
+                    <Avatar.Image {...props} source={{uri: item.pic}} />
+                  )}
+                />
+              </TouchableRipple>
             ))}
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }

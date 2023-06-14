@@ -5,6 +5,8 @@ import Info from '../pages/info';
 import Chart from '../pages/chart';
 import Mine from '../pages/mine';
 import AddRecord from '../pages/addRecord';
+import Detail from '../pages/detail';
+import Player from '../pages/player';
 import {LogBox} from 'react-native';
 
 LogBox.ignoreLogs([
@@ -20,6 +22,9 @@ export const ROUTE_PATH = {
   MINE: 'mine',
   // 添加记账
   ADDRECORD: 'addRecord',
+  // 详情页面
+  DETAIL: 'detail',
+  PLAYER: 'player',
 } as const;
 
 type Valueof<T> = T[keyof T];
@@ -34,6 +39,14 @@ export const routes: Array<IRoutes> = [
   {
     path: ROUTE_PATH.ADDRECORD,
     component: AddRecord,
+  },
+  {
+    path: ROUTE_PATH.DETAIL,
+    component: Detail,
+  },
+  {
+    path: ROUTE_PATH.PLAYER,
+    component: Player,
   },
 ];
 export const tabs: Array<IRoutes> = [
@@ -62,6 +75,8 @@ interface RouterParams extends RouterParamsBase {
   mine: undefined;
   chart: undefined;
   info: undefined;
+  detail: {href: string; pic: string; title: string};
+  player: {href: string; title: string};
 }
 
 /** 路由参数Hook */
