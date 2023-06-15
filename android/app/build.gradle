@@ -149,6 +149,9 @@ android {
 }
 
 dependencies {
+    implementation 'com.facebook.react:react-native:0.71.10'  // 版本号根据你的React Native版本而定
+    implementation project(':react-native-video')
+
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
 
