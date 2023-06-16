@@ -1,5 +1,5 @@
 import StatusBar from '@/components/base/statusBar';
-import {WebviweContext} from '@/entry';
+import {WebviweContext, pluginName} from '@/entry';
 import {useNavigate, useParams} from '@/entry/router';
 import rpx from '@/utils/rpx';
 import React, {useContext, useEffect, useState} from 'react';
@@ -8,7 +8,7 @@ import {ScrollView} from 'react-native-gesture-handler';
 import {Chip, Text} from 'react-native-paper';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {WebViewMessageEvent} from 'react-native-webview';
-import code from '@/plugins/injectJavaScript';
+import {PLUGINS} from '@/plugins/injectJavaScript';
 import Loading from '@/components/base/loading';
 
 const styles = StyleSheet.create({
@@ -37,7 +37,7 @@ export default function Detail() {
 
   const navigate = useNavigate();
 
-  const injectedJavaScript = code.yhdm.detailCode;
+  const injectedJavaScript = PLUGINS[pluginName].detailCode;
 
   const handleVideo = (video: any) => {
     navigate('player', video);

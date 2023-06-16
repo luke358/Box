@@ -13,6 +13,7 @@ import bootstrap from './bootstrap';
 import WebView, {WebViewMessageEvent} from 'react-native-webview';
 import {View} from 'react-native';
 import {WebViewNavigationEvent} from 'react-native-webview/lib/WebViewTypes';
+import {PLUGINS} from '@/plugins/injectJavaScript';
 
 bootstrap();
 const Stack = createStackNavigator<any>();
@@ -28,6 +29,7 @@ export const WebviweContext = createContext<{
   methodsRef: RefObject<WebviewMethods>;
 } | null>(null);
 
+export const pluginName: keyof typeof PLUGINS = 'qfitv';
 const App = () => {
   const webviewRef = useRef<WebView>(null);
   const methodsRef = useRef<WebviewMethods>({});

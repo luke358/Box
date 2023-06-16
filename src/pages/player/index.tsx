@@ -19,7 +19,7 @@ import {OnProgressData} from 'react-native-video';
 import Slider from '@react-native-community/slider';
 import Loading from '@/components/base/loading';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import code from '@/plugins/injectJavaScript';
+import {PLUGINS} from '@/plugins/injectJavaScript';
 
 import {
   Gesture,
@@ -30,7 +30,7 @@ import {runOnJS} from 'react-native-reanimated';
 import rpx from '@/utils/rpx';
 import {Text} from 'react-native-paper';
 import {formatTime} from '@/utils/video';
-import {WebviweContext} from '@/entry';
+import {WebviweContext, pluginName} from '@/entry';
 
 const {width, height} = Dimensions.get('window');
 
@@ -82,7 +82,7 @@ export default function Player(props: VideoProps) {
 
   const navigation = useNavigation();
 
-  const injectedJavaScript = code.yhdm.videoCode;
+  const injectedJavaScript = PLUGINS[pluginName].videoCode;
 
   const onVideoLoadStart = () => {
     setMsg('加载视频中');

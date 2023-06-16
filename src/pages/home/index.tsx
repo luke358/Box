@@ -4,7 +4,7 @@ import rpx from '@/utils/rpx';
 import React, {useContext, useState} from 'react';
 import {StyleSheet, View} from 'react-native';
 import {ScrollView} from 'react-native-gesture-handler';
-import code from '@/plugins/injectJavaScript';
+import {PLUGINS} from '@/plugins/injectJavaScript';
 
 import {
   Avatar,
@@ -15,7 +15,7 @@ import {
 } from 'react-native-paper';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {WebViewMessageEvent} from 'react-native-webview';
-import {WebviweContext} from '@/entry';
+import {WebviweContext, pluginName} from '@/entry';
 import Loading from '@/components/base/loading';
 import {useFocusEffect} from '@react-navigation/native';
 
@@ -44,8 +44,8 @@ export default function App() {
   const [kw, setKw] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [text, setText] = React.useState('');
-  const injectedJavaScript = code.yhdm.searchCode;
-  const searchUrl = code.yhdm.searchUrl;
+  const injectedJavaScript = PLUGINS[pluginName].searchCode;
+  const searchUrl = PLUGINS[pluginName].searchUrl;
 
   const onLoadEnd = () => {
     setIsLoading(false);
@@ -53,9 +53,10 @@ export default function App() {
     webviewContext?.webviewRef.current?.stopLoading;
   };
   const onMessage = (event: WebViewMessageEvent) => {
-    const receivedHtml = event.nativeEvent.data;
-    console.log('onMessage', receivedHtml);
-    setHtml(JSON.parse(receivedHtml));
+    const data = event.nativeEvent.data;
+    console.log('onMessage', data);
+    // { data: [], isEnd: false }
+    setHtml(JSON.parse(data));
   };
 
   const onLoadStart = () => {
@@ -102,7 +103,8 @@ export default function App() {
           ) : (
             <>
               {html &&
-                (html as any[]).map(item => (
+                html.data &&
+                (html.data as any[]).map(item => (
                   <TouchableRipple
                     key={item.href}
                     onPress={() => handleDetail(item)}>
