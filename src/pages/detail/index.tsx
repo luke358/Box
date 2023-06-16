@@ -85,16 +85,17 @@ export default function Detail() {
           <>
             {html &&
               (html as any[]).map(
-                (groupa: any[], idx1) =>
-                  groupa.length > 0 && (
+                (groupa: any, idx1) =>
+                  groupa &&
+                  groupa.data.length > 0 && (
                     <View key={idx1}>
-                      <Text>合集{idx1 + 1}</Text>
+                      <Text>{groupa.title}</Text>
                       <View
                         style={{
                           flexDirection: 'row',
                           flexWrap: 'wrap',
                         }}>
-                        {groupa.map((item, idx2) => (
+                        {groupa.data.map((item: any, idx2: number) => (
                           <View
                             key={`${idx1}-${idx2}`}
                             style={{

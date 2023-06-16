@@ -26,7 +26,10 @@ export const PLUGINS = {
   
   const data = Array.from(uls).map(ul => {
     const als = ul.querySelectorAll('li a')
-   return Array.from(als).map(a => ({href: a.href, title: a.textContent}))
+   return {
+    title: 'xxx',
+    data: Array.from(als).map(a => ({href: a.href, title: a.textContent}))
+   }
   })
 
   window.ReactNativeWebView.postMessage(JSON.stringify(data));
@@ -51,17 +54,23 @@ export const PLUGINS = {
   `,
     searchUrl: 'https://qfitv.com/index.php/vod/search/page/1/wd/{{kw}}.html',
     detailCode: `
-  const uls = document.querySelectorAll('#play_tabs .main0 .movurl ul')
-  
-  const data = Array.from(uls).map(ul => {
-    const als = ul.querySelectorAll('li a')
-   return Array.from(als).map(a => ({href: a.href, title: a.textContent}))
-  })
-
-  window.ReactNativeWebView.postMessage(JSON.stringify(data));
+    const titles = Array.from(document.querySelectorAll('.module-tab-items .module-tab-item')).map(item => item.textContent);
+    const data = Array.from(document.querySelectorAll('.module-list')).map((item, index) => {
+        return {
+            data: Array.from(item.querySelectorAll('a')).map(item => {
+            const href = item.href;
+            const title = item.textContent;
+            return {href, title}
+        }),
+            title: titles[index]
+        }
+    })
+    window.ReactNativeWebView.postMessage(JSON.stringify(data));
   `,
-    videoCode: `  const iframeSrc = document.querySelector('iframe').src;
-  const videoUrl = iframeSrc.match(/url=(.*)/)[1];
-  window.ReactNativeWebView.postMessage(videoUrl);`,
+    videoCode: `  
+      const iframeSrc = document.querySelector('#playleft iframe').src;
+      const videoUrl = iframeSrc.match(/url=(.*)/)[1];
+      window.ReactNativeWebView.postMessage(videoUrl);
+    `,
   },
 };
