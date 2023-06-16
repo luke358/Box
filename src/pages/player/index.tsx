@@ -2,7 +2,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {useParams} from '@/entry/router';
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useContext, useEffect, useRef, useState} from 'react';
 import {
   BackHandler,
   Dimensions,
@@ -19,6 +19,7 @@ import {OnProgressData} from 'react-native-video';
 import Slider from '@react-native-community/slider';
 import Loading from '@/components/base/loading';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import code from '@/plugins/injectJavaScript';
 
 import {
   Gesture,
@@ -29,6 +30,7 @@ import {runOnJS} from 'react-native-reanimated';
 import rpx from '@/utils/rpx';
 import {Text} from 'react-native-paper';
 import {formatTime} from '@/utils/video';
+import {WebviweContext} from '@/entry';
 
 const {width, height} = Dimensions.get('window');
 
@@ -60,6 +62,9 @@ export type VideoProps = VideoProperties & {
 
 export default function Player(props: VideoProps) {
   const {onCustomPanGesture, doubleTapInterval = 500} = props;
+
+  const webviewContext = useContext(WebviweContext);
+
   const [html, setHtml] = useState<any>();
   const [currentTime, setCurrentTime] = useState<number>(0);
   const params = useParams<'player'>();
@@ -77,28 +82,19 @@ export default function Player(props: VideoProps) {
 
   const navigation = useNavigation();
 
-  const injectedJavaScript = `
-  const iframeSrc = document.querySelector('iframe').src;
-  const videoUrl = iframeSrc.match(/url=(.*)/)[1];
-  window.ReactNativeWebView.postMessage(videoUrl);
-`;
+  const injectedJavaScript = code.yhdm.videoCode;
 
-  const handleMessage = (event: WebViewMessageEvent) => {
-    const receivedHtml = event.nativeEvent.data;
-    setHtml(receivedHtml);
-  };
-
-  const onLoadStart = () => {
+  const onVideoLoadStart = () => {
     setMsg('加载视频中');
     setIsLoading(true);
   };
 
-  const onLoad = (loadData: OnLoadData) => {
+  const onVideoLoad = (loadData: OnLoadData) => {
     setDuration(loadData.duration);
     setIsLoading(false);
   };
 
-  const onEnd = () => {
+  const onVideoEnd = () => {
     setIdLoadEnd(true);
     setPaused(true);
   };
@@ -191,17 +187,42 @@ export default function Player(props: VideoProps) {
   const taps = Gesture.Exclusive(doubleTapHandle, singleTapHandler);
   const gesture = Gesture.Race(onPanGesture, taps);
 
-  const onWebViewLoadStart = () => {
-    setIsLoading(true);
-    setMsg('解析 webview 中');
-  };
-
   const onSlidingStart = () => {};
 
   const onSlidingComplete = (val: number) => {
     isSeeking.current = true;
     seekTo(val);
   };
+
+  const onMessage = (event: WebViewMessageEvent) => {
+    const receivedHtml = event.nativeEvent.data;
+    setHtml(receivedHtml);
+  };
+
+  const onLoadStart = () => {
+    setIsLoading(true);
+    setMsg('解析 webview 中');
+  };
+
+  const onLoadEnd = () => {
+    setIsLoading(false);
+    webviewContext?.webviewRef.current?.injectJavaScript(injectedJavaScript);
+    webviewContext?.webviewRef.current?.stopLoading;
+  };
+
+  useEffect(() => {
+    webviewContext?.webviewRef.current?.stopLoading;
+    webviewContext!.methodsRef.current!.onMessage = onMessage;
+    webviewContext!.methodsRef.current!.onLoadStart = onLoadStart;
+    webviewContext!.methodsRef.current!.onLoadEnd = onLoadEnd;
+
+    webviewContext?.setUrl(params.href);
+    webviewContext?.webviewRef.current?.reload();
+    () => {
+      webviewContext!.methodsRef.current!.onMessage = () => {};
+      webviewContext!.methodsRef.current!.onLoadStart = () => {};
+    };
+  }, []);
 
   useEffect(() => {
     // 在组件挂载时锁定屏幕方向为横屏
@@ -238,19 +259,6 @@ export default function Player(props: VideoProps) {
       {/* video loading */}
       <View style={styles.appWrapper}>
         {isLoading && <Loading text={msg} />}
-
-        <View style={styles.webviewWrapper}>
-          {params.href && (
-            <WebView
-              ref={webviewRef}
-              source={{uri: params.href}}
-              originWhitelist={['*']}
-              injectedJavaScript={injectedJavaScript}
-              onLoadStart={onWebViewLoadStart}
-              onMessage={handleMessage}
-            />
-          )}
-        </View>
         {html && (
           <>
             <Video
@@ -267,9 +275,9 @@ export default function Player(props: VideoProps) {
               fullscreenAutorotate={true}
               // controls={true}
               playInBackground={false}
-              onLoadStart={onLoadStart}
-              onLoad={onLoad}
-              onEnd={onEnd}
+              onLoadStart={onVideoLoadStart}
+              onLoad={onVideoLoad}
+              onEnd={onVideoEnd}
               onProgress={onProgress}
               paused={paused}
             />

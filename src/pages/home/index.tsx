@@ -1,10 +1,11 @@
 import StatusBar from '@/components/base/statusBar';
 import {useNavigate} from '@/entry/router';
 import rpx from '@/utils/rpx';
-import React, {useRef, useState} from 'react';
+import React, {useContext, useState} from 'react';
 import {StyleSheet, View} from 'react-native';
 import {ScrollView} from 'react-native-gesture-handler';
 import code from '@/plugins/injectJavaScript';
+
 import {
   Avatar,
   Card,
@@ -13,8 +14,10 @@ import {
   TouchableRipple,
 } from 'react-native-paper';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {WebView, WebViewMessageEvent} from 'react-native-webview';
-import Video from 'react-native-video';
+import {WebViewMessageEvent} from 'react-native-webview';
+import {WebviweContext} from '@/entry';
+import Loading from '@/components/base/loading';
+import {useFocusEffect} from '@react-navigation/native';
 
 const styles = StyleSheet.create({
   appWrapper: {
@@ -32,83 +35,55 @@ const styles = StyleSheet.create({
     elevation: 15,
   },
 });
-export default function App() {
-  return (
-    //
-    // <Video
-    //   style={{width: 300, height: 400, backgroundColor: '#ccc'}}
-    //   source={{
-    //     uri: 'https://110.42.2.98:33555/t-me-tucheng5566/7b8cf23e446ce53103a24f8dd1da1d69.m3u8',
-    //     type: 'hls',
-    //   }}
-    //   onError={e => console.log(e)}
-    //   controls={true}
-    //   resizeMode="contain"
-    // />
-    <WebView
-      style={{marginTop: 50}}
-      originWhitelist={['*']}
-      source={{uri: 'http://192.168.11.65:5502/index.html'}}
-      // 其他属性...
-      onMessage={event => {
-        console.log(event.nativeEvent.data); // 输出WebView的日志消息
-      }}
-      mediaPlaybackRequiresUserAction={true}
-      javaScriptEnabled={true}
-      domStorageEnabled={true}
-      mixedContentMode="always"
-      androidLayerType="hardware"
-      allowsInlineMediaPlayback={true}
-      userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1"
-      injectedJavaScriptBeforeContentLoaded={`
-        // window.addEventListener("DOMContentLoaded", (event) => {
-        //   const iframe = document.querySelectorAll('iframe')[2];
-        //   const iframeWindow = iframe.contentWindow;
-        //   setTimeout(() => {
-        //     alert(iframeWindow.performance.getEntriesByType('resource'))
-        //   }, 3000)
-        //   iframeWindow.XMLHttpRequest.prototype.send = function() {
-        //     // 在发送 XHR 请求前进行拦截和处理
-        //     console.log('拦截到 XHR 请求');
-        //     window.ReactNativeWebView.postMessage(xhr.responseURL);
-        //     alert('test')
-        //     // 调用原始的 send 方法继续发送 XHR 请求
-        //     XMLHttpRequest.prototype.send.apply(this, arguments);
-        //   };
-        //   alert(iframeWindow.XMLHttpRequest.prototype);
-        // });
-      `}
-    />
-  );
-}
 
-export function CApp() {
+export default function App() {
+  const webviewContext = useContext(WebviweContext);
+
   const navigate = useNavigate();
   const [html, setHtml] = useState<any>();
-  const [kw, setKw] = useState('斗破');
+  const [kw, setKw] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [text, setText] = React.useState('');
-  const webviewRef = useRef<WebView>(null);
-  const injectedJavaScript = code.gimy;
+  const injectedJavaScript = code.yhdm.searchCode;
+  const searchUrl = code.yhdm.searchUrl;
 
-  const uri = 'https://www.yhdmz.org/vp/23131-1-0.html'; // 替换为你想要加载的网址
-
-  const handleMessage = (event: WebViewMessageEvent) => {
+  const onLoadEnd = () => {
+    setIsLoading(false);
+    webviewContext?.webviewRef.current?.injectJavaScript(injectedJavaScript);
+    webviewContext?.webviewRef.current?.stopLoading;
+  };
+  const onMessage = (event: WebViewMessageEvent) => {
     const receivedHtml = event.nativeEvent.data;
-    console.log('handleMessage test', receivedHtml);
-    // setHtml(JSON.parse(receivedHtml));
+    console.log('onMessage', receivedHtml);
+    setHtml(JSON.parse(receivedHtml));
   };
 
-  const searchUrl = 'https://www.yhdmz.org/s_all?ex=1&kw=';
+  const onLoadStart = () => {
+    setIsLoading(true);
+  };
 
   function onSubmitEditing() {
     setKw(text);
-    webviewRef.current?.clearCache?.(true);
-    webviewRef.current?.reload();
+    webviewContext?.setUrl(searchUrl.replace('{{kw}}', text));
+    webviewContext?.webviewRef.current?.reload();
   }
 
   function handleDetail(item: any) {
     navigate('detail', item);
   }
+
+  useFocusEffect(() => {
+    webviewContext?.webviewRef.current?.stopLoading;
+    webviewContext!.methodsRef.current!.onLoadEnd = onLoadEnd;
+    webviewContext!.methodsRef.current!.onMessage = onMessage;
+    webviewContext!.methodsRef.current!.onLoadStart = onLoadStart;
+    () => {
+      webviewContext!.methodsRef.current!.onLoadEnd = () => {};
+      webviewContext!.methodsRef.current!.onMessage = () => {};
+      webviewContext!.methodsRef.current!.onLoadStart = () => {};
+    };
+  });
+
   return (
     <SafeAreaView style={styles.appWrapper}>
       <StatusBar />
@@ -119,60 +94,28 @@ export function CApp() {
           onSubmitEditing={onSubmitEditing}
         />
       </View>
-      {/* search */}
-      <View style={{display: 'none'}}>
-        <Text>{kw}</Text>
-        {kw && (
-          <WebView
-            // ref={webviewRef}
-            // style={{
-            //   display: 'none',
-            // }}
-            // source={{uri: `${searchUrl}${kw}`}}
-            source={{uri: 'https://gimy.app/eps/241836-6-31.html'}}
-            // source={{uri}}
-            userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1"
-            originWhitelist={['*']}
-            injectedJavaScript={injectedJavaScript}
-            onMessage={handleMessage}
-          />
-        )}
-      </View>
-      {/* video */}
-      {/* <View style={{display: 'none'}}>
-        <WebView
-          ref={webviewRef}
-          style={{display: 'none'}}
-          source={{uri}}
-          originWhitelist={['*']}
-          injectedJavaScript={injectedJavaScript}
-          onMessage={handleMessage}
-        />
-      </View> */}
       <ScrollView>
-        {/* <Text>{html}</Text> */}
-        {/* {html && (
-          <Video
-            style={{width: 300, height: 400, backgroundColor: 'red'}}
-            source={{uri: decodeURIComponent(html)}}
-            controls={true}
-            resizeMode="contain"
-          />
-        )} */}
+        {kw && <Text>当前搜索字段: {kw}</Text>}
         <View>
-          {html &&
-            (html as any[]).map(item => (
-              <TouchableRipple
-                key={item.href}
-                onPress={() => handleDetail(item)}>
-                <Card.Title
-                  title={item.title}
-                  left={props => (
-                    <Avatar.Image {...props} source={{uri: item.pic}} />
-                  )}
-                />
-              </TouchableRipple>
-            ))}
+          {isLoading ? (
+            <Loading />
+          ) : (
+            <>
+              {html &&
+                (html as any[]).map(item => (
+                  <TouchableRipple
+                    key={item.href}
+                    onPress={() => handleDetail(item)}>
+                    <Card.Title
+                      title={item.title}
+                      left={props => (
+                        <Avatar.Image {...props} source={{uri: item.pic}} />
+                      )}
+                    />
+                  </TouchableRipple>
+                ))}
+            </>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
