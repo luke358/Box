@@ -110,9 +110,11 @@ export default function App() {
                     onPress={() => handleDetail(item)}>
                     <Card.Title
                       title={item.title}
-                      left={props => (
-                        <Avatar.Image {...props} source={{uri: item.pic}} />
-                      )}
+                      left={props =>
+                        item.pic && (
+                          <Avatar.Image {...props} source={{uri: item.pic}} />
+                        )
+                      }
                     />
                   </TouchableRipple>
                 ))}

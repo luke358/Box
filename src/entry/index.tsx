@@ -29,7 +29,7 @@ export const WebviweContext = createContext<{
   methodsRef: RefObject<WebviewMethods>;
 } | null>(null);
 
-export const pluginName: keyof typeof PLUGINS = 'qfitv';
+export const pluginName: keyof typeof PLUGINS = 'kanjuda';
 const App = () => {
   const webviewRef = useRef<WebView>(null);
   const methodsRef = useRef<WebviewMethods>({});
