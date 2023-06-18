@@ -78,6 +78,39 @@ export default function Player(props: VideoProps) {
   const [isLoadEnd, setIdLoadEnd] = useState<boolean>(false);
   const [paused, setPaused] = useState<boolean>(false);
   const [duration, setDuration] = useState<number>();
+  const [playbackRate, setPlaybackRate] = useState(1);
+
+  const isPressingRef = useRef(false);
+
+  const [isShowControl, setIsShowControl] = useState<boolean>(true);
+
+  const toggleIsShowControl = () => {
+    if (isShowControl) {
+      clearControlTimeout;
+    } else {
+      setControlTimeout();
+    }
+    setIsShowControl(!isShowControl);
+  };
+  const controlRef = useRef<number>();
+  const hideControl = () => setIsShowControl(false);
+  const showControl = () => setIsShowControl(true);
+  const setControlTimeout = () => {
+    clearControlTimeout();
+    controlRef.current = setTimeout(() => {
+      hideControl();
+    }, 3000);
+  };
+
+  const clearControlTimeout = () => {
+    controlRef.current && clearTimeout(controlRef.current);
+  };
+
+  const resetControlTimeout = () => {
+    clearControlTimeout();
+
+    setControlTimeout();
+  };
 
   const navigation = useNavigation();
 
@@ -92,6 +125,7 @@ export default function Player(props: VideoProps) {
   const onVideoLoad = (loadData: OnLoadData) => {
     setDuration(loadData.duration);
     setIsLoading(false);
+    setControlTimeout();
   };
 
   const onVideoEnd = () => {
@@ -121,46 +155,41 @@ export default function Player(props: VideoProps) {
     return true;
   };
 
-  const defalutPanGesture = Gesture.Pan()
-    .onStart(({velocityY, velocityX}) => {
-      // panIsVertical.value = Math.abs(velocityY) > Math.abs(velocityX);
+  const touchDown = () => {
+    isPressingRef.current = true;
+    // 延时一秒后将播放速率设置为2倍
+    setTimeout(() => {
+      if (isPressingRef.current) {
+        setPlaybackRate(2);
+      }
+    }, 1000);
+  };
+  const touchUp = () => {
+    isPressingRef.current = false;
+    setPlaybackRate(1);
+  };
+  const defaultPanGesture = Gesture.Pan()
+    .onStart(({velocityY, velocityX}) => {})
+    .onUpdate(({translationY, translationX}) => {})
+    .onTouchesDown(() => {
+      runOnJS(touchDown)();
+      console.log('pan touch');
     })
-    .onUpdate(({translationY}) => {
-      // controlViewOpacity.value = withTiming(0, {duration: 100});
-      // if (isFullScreen.value) {
-      //   if (translationY > 0 && Math.abs(translationY) < 100) {
-      //     videoScale.value = clamp(0.9, 1 - Math.abs(translationY) * 0.008, 1);
-      //     videoTransY.value = translationY;
-      //   }
-      // } else {
-      //   if (translationY < 0 && Math.abs(translationY) < 40) {
-      //     videoScale.value = Math.abs(translationY) * 0.012 + 1;
-      //   }
-      // }
-    })
-    .onEnd(({translationY}, success) => {
-      // if (!panIsVertical.value && !success) {
-      //   return;
-      // }
-      // if (isFullScreen.value) {
-      //   if (translationY >= 100) {
-      //     runOnJS(exitFullScreen)();
-      //   }
-      // } else {
-      //   if (-translationY >= 40) {
-      //     runOnJS(enterFullScreen)();
-      //   }
-      // }
-      // videoTransY.value = 0;
-      // videoScale.value = withTiming(1);
+    .onTouchesUp(() => {
+      runOnJS(touchUp)();
+      console.log('pan touch end');
     });
 
   const onPanGesture = onCustomPanGesture
     ? onCustomPanGesture
-    : defalutPanGesture;
+    : defaultPanGesture;
 
   const singleTapHandler = Gesture.Tap().onEnd((_event, success) => {
     if (success) {
+      if (!isShowControl) {
+        runOnJS(setControlTimeout)();
+      }
+      runOnJS(toggleIsShowControl)();
       // if (controlViewOpacity.value === 0) {
       //   controlViewOpacity.value = withTiming(1, controlAnimteConfig);
       //   setControlTimeout();
@@ -263,6 +292,7 @@ export default function Player(props: VideoProps) {
           <>
             <Video
               ref={videoPlayerRef}
+              rate={playbackRate}
               source={{uri: decodeURIComponent(html.videoUrl)}}
               style={[
                 styles.video,
@@ -281,94 +311,97 @@ export default function Player(props: VideoProps) {
               onProgress={onProgress}
               paused={paused}
             />
-            <View
-              style={{
-                position: 'absolute',
-                bottom: 0,
-                height: rpx(130),
-                width: Dimensions.get('window').width,
-                alignItems: 'center',
-                paddingHorizontal: rpx(30),
-                marginBottom: rpx(0),
-              }}>
-              {duration && duration > 0 && (
-                <View style={{flexDirection: 'row'}}>
-                  <Text style={{color: '#fff', width: rpx(120)}}>
-                    {formatTime(currentTime)}
-                  </Text>
-                  <Slider
-                    style={{flex: 1}}
-                    minimumValue={0}
-                    value={currentTime}
-                    onSlidingStart={onSlidingStart}
-                    onSlidingComplete={onSlidingComplete}
-                    maximumValue={duration}
-                    minimumTrackTintColor="#FFFFFF"
-                    maximumTrackTintColor="#000000"
-                  />
-                  <Text style={{color: '#fff', width: rpx(120)}}>
-                    {formatTime(duration)}
-                  </Text>
-                </View>
-              )}
+            {/* controls */}
+            {isShowControl && (
               <View
                 style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  height: rpx(120),
-                  width: '100%',
+                  position: 'absolute',
+                  bottom: 0,
+                  height: rpx(130),
+                  width: Dimensions.get('window').width,
+                  alignItems: 'center',
+                  paddingHorizontal: rpx(30),
+                  marginBottom: rpx(0),
                 }}>
-                <View style={{flexDirection: 'row'}}>
-                  <Icon
-                    onPress={() => setPaused(!paused)}
-                    style={{
-                      marginLeft: rpx(10),
-                      paddingVertical: rpx(12),
-                      color: '#fff',
-                    }}
-                    name={
-                      paused ? 'play-circle-outline' : 'pause-circle-outline'
-                    }
-                    size={rpx(70)}
-                  />
-                  <Icon
-                    style={{
-                      marginLeft: rpx(10),
-                      paddingVertical: rpx(12),
-                      color: '#fff',
-                    }}
-                    name="arrow-right-bold-circle-outline"
-                    size={rpx(70)}
-                  />
-                </View>
-                <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                  <Text
-                    style={{
-                      width: rpx(100),
-                      textAlign: 'center',
-                      color: '#fff',
-                    }}>
-                    倍速
-                  </Text>
-                  <Text
-                    style={{
-                      width: rpx(100),
-                      textAlign: 'center',
-                      color: '#fff',
-                    }}>
-                    画面
-                  </Text>
-                  <Text
-                    style={{
-                      width: rpx(100),
-                      textAlign: 'center',
-                      color: '#fff',
-                    }}>
-                    选集
-                  </Text>
+                {duration && duration > 0 && (
+                  <View style={{flexDirection: 'row'}}>
+                    <Text style={{color: '#fff', width: rpx(120)}}>
+                      {formatTime(currentTime)}
+                    </Text>
+                    <Slider
+                      style={{flex: 1}}
+                      minimumValue={0}
+                      value={currentTime}
+                      onSlidingStart={onSlidingStart}
+                      onSlidingComplete={onSlidingComplete}
+                      maximumValue={duration}
+                      minimumTrackTintColor="#FFFFFF"
+                      maximumTrackTintColor="#000000"
+                    />
+                    <Text style={{color: '#fff', width: rpx(120)}}>
+                      {formatTime(duration)}
+                    </Text>
+                  </View>
+                )}
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    height: rpx(120),
+                    width: '100%',
+                  }}>
+                  <View style={{flexDirection: 'row'}}>
+                    <Icon
+                      onPress={() => setPaused(!paused)}
+                      style={{
+                        marginLeft: rpx(10),
+                        paddingVertical: rpx(12),
+                        color: '#fff',
+                      }}
+                      name={
+                        paused ? 'play-circle-outline' : 'pause-circle-outline'
+                      }
+                      size={rpx(70)}
+                    />
+                    <Icon
+                      style={{
+                        marginLeft: rpx(10),
+                        paddingVertical: rpx(12),
+                        color: '#fff',
+                      }}
+                      name="arrow-right-bold-circle-outline"
+                      size={rpx(70)}
+                    />
+                  </View>
+                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                    <Text
+                      style={{
+                        width: rpx(100),
+                        textAlign: 'center',
+                        color: '#fff',
+                      }}>
+                      倍速
+                    </Text>
+                    <Text
+                      style={{
+                        width: rpx(100),
+                        textAlign: 'center',
+                        color: '#fff',
+                      }}>
+                      画面
+                    </Text>
+                    <Text
+                      style={{
+                        width: rpx(100),
+                        textAlign: 'center',
+                        color: '#fff',
+                      }}>
+                      选集
+                    </Text>
+                  </View>
                 </View>
               </View>
-            </View>
+            )}
           </>
         )}
       </View>
