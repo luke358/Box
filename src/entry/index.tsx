@@ -14,8 +14,10 @@ import WebView, {WebViewMessageEvent} from 'react-native-webview';
 import {View} from 'react-native';
 import {WebViewNavigationEvent} from 'react-native-webview/lib/WebViewTypes';
 import {PLUGINS} from '@/plugins/injectJavaScript';
+import {setup} from '@/core/plugins';
 
 bootstrap();
+setup();
 const Stack = createStackNavigator<any>();
 
 interface WebviewMethods {

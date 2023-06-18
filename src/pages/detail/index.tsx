@@ -1,5 +1,5 @@
 import StatusBar from '@/components/base/statusBar';
-import {WebviweContext, pluginName} from '@/entry';
+import {WebviweContext} from '@/entry';
 import {useNavigate, useParams} from '@/entry/router';
 import rpx from '@/utils/rpx';
 import React, {useContext, useEffect, useState} from 'react';
@@ -8,8 +8,8 @@ import {ScrollView} from 'react-native-gesture-handler';
 import {Chip, Text} from 'react-native-paper';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {WebViewMessageEvent} from 'react-native-webview';
-import {PLUGINS} from '@/plugins/injectJavaScript';
 import Loading from '@/components/base/loading';
+import PluginManager from '@/core/plugins';
 
 const styles = StyleSheet.create({
   appWrapper: {
@@ -31,13 +31,14 @@ const styles = StyleSheet.create({
 export default function Detail() {
   const webviewContext = useContext(WebviweContext);
 
-  const [html, setHtml] = useState<any>();
+  const [html, setHtml] = useState<IPlugin.IDetailItem[] | null>();
   const params = useParams<'detail'>();
   const [isLoading, setIsLoading] = useState(false);
 
   const navigate = useNavigate();
 
-  const injectedJavaScript = PLUGINS[pluginName].detailCode;
+  const plugin = PluginManager.getCurrentPlugin();
+  const injectedJavaScript = plugin?.instance.detailInjectCode || '';
 
   const handleVideo = (video: any) => {
     navigate('player', video);
@@ -49,9 +50,8 @@ export default function Detail() {
     webviewContext?.webviewRef.current?.stopLoading;
   };
   const onMessage = (event: WebViewMessageEvent) => {
-    const receivedHtml = event.nativeEvent.data;
-    console.log('onMessage', receivedHtml);
-    setHtml(JSON.parse(receivedHtml));
+    const result = event.nativeEvent.data;
+    setHtml(plugin?.instance.detailComplete?.({result}));
   };
 
   const onLoadStart = () => {
@@ -84,8 +84,8 @@ export default function Detail() {
         ) : (
           <>
             {html &&
-              (html as any[]).map(
-                (groupa: any, idx1) =>
+              html.map(
+                (groupa, idx1) =>
                   groupa &&
                   groupa.data.length > 0 && (
                     <View key={idx1}>

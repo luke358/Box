@@ -1,6 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-native/no-inline-styles */
 /* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import {useParams} from '@/entry/router';
 import React, {useContext, useEffect, useRef, useState} from 'react';
 import {
@@ -12,14 +12,13 @@ import {
 } from 'react-native';
 import Video, {VideoProperties} from 'react-native-video';
 import Orientation from 'react-native-orientation-locker';
-import {WebView, WebViewMessageEvent} from 'react-native-webview';
+import {WebViewMessageEvent} from 'react-native-webview';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {OnLoadData} from 'react-native-video';
 import {OnProgressData} from 'react-native-video';
 import Slider from '@react-native-community/slider';
 import Loading from '@/components/base/loading';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import {PLUGINS} from '@/plugins/injectJavaScript';
 
 import {
   Gesture,
@@ -30,7 +29,8 @@ import {runOnJS} from 'react-native-reanimated';
 import rpx from '@/utils/rpx';
 import {Text} from 'react-native-paper';
 import {formatTime} from '@/utils/video';
-import {WebviweContext, pluginName} from '@/entry';
+import {WebviweContext} from '@/entry';
+import PluginManager from '@/core/plugins';
 
 const {width, height} = Dimensions.get('window');
 
@@ -65,11 +65,10 @@ export default function Player(props: VideoProps) {
 
   const webviewContext = useContext(WebviweContext);
 
-  const [html, setHtml] = useState<any>();
+  const [html, setHtml] = useState<IPlugin.IVideoCompleteResult | null>();
   const [currentTime, setCurrentTime] = useState<number>(0);
   const params = useParams<'player'>();
 
-  const webviewRef = useRef<WebView>(null);
   const videoPlayerRef = useRef<Video>(null);
 
   const isSeeking = useRef<boolean>(false);
@@ -82,7 +81,8 @@ export default function Player(props: VideoProps) {
 
   const navigation = useNavigation();
 
-  const injectedJavaScript = PLUGINS[pluginName].videoCode;
+  const plugin = PluginManager.getCurrentPlugin();
+  const injectedJavaScript = plugin?.instance.videoInjectCode || '';
 
   const onVideoLoadStart = () => {
     setMsg('加载视频中');
@@ -195,8 +195,8 @@ export default function Player(props: VideoProps) {
   };
 
   const onMessage = (event: WebViewMessageEvent) => {
-    const receivedHtml = event.nativeEvent.data;
-    setHtml(receivedHtml);
+    const result = event.nativeEvent.data;
+    setHtml(plugin?.instance.videoComplete({result}) || JSON.parse(result));
   };
 
   const onLoadStart = () => {
@@ -263,7 +263,7 @@ export default function Player(props: VideoProps) {
           <>
             <Video
               ref={videoPlayerRef}
-              source={{uri: decodeURIComponent(html)}}
+              source={{uri: decodeURIComponent(html.videoUrl)}}
               style={[
                 styles.video,
                 {

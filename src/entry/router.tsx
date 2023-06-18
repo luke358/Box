@@ -7,6 +7,7 @@ import Mine from '../pages/mine';
 import AddRecord from '../pages/addRecord';
 import Detail from '../pages/detail';
 import Player from '../pages/player';
+import Search from '../pages/search';
 import {LogBox} from 'react-native';
 
 LogBox.ignoreLogs([
@@ -25,6 +26,7 @@ export const ROUTE_PATH = {
   // 详情页面
   DETAIL: 'detail',
   PLAYER: 'player',
+  SEARCH: 'search',
 } as const;
 
 type Valueof<T> = T[keyof T];
@@ -47,6 +49,10 @@ export const routes: Array<IRoutes> = [
   {
     path: ROUTE_PATH.PLAYER,
     component: Player,
+  },
+  {
+    path: ROUTE_PATH.SEARCH,
+    component: Search,
   },
 ];
 export const tabs: Array<IRoutes> = [
@@ -77,6 +83,7 @@ interface RouterParams extends RouterParamsBase {
   info: undefined;
   detail: {href: string; pic: string; title: string};
   player: {href: string; title: string};
+  search: undefined;
 }
 
 /** 路由参数Hook */
