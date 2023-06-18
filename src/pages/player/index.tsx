@@ -25,7 +25,7 @@ import {
   GestureDetector,
   PanGesture,
 } from 'react-native-gesture-handler';
-import {runOnJS} from 'react-native-reanimated';
+import {runOnJS, useSharedValue} from 'react-native-reanimated';
 import rpx from '@/utils/rpx';
 import {Text} from 'react-native-paper';
 import {formatTime} from '@/utils/video';
@@ -80,7 +80,10 @@ export default function Player(props: VideoProps) {
   const [duration, setDuration] = useState<number>();
   const [playbackRate, setPlaybackRate] = useState(1);
 
-  const isPressingRef = useRef(false);
+  const isPressingRef = useSharedValue(false);
+  const isPressRateRef = useSharedValue(false);
+  const isPressHorizonRef = useSharedValue(false);
+  const isPressVerticalRef = useSharedValue(false);
 
   const [isShowControl, setIsShowControl] = useState<boolean>(true);
 
@@ -156,21 +159,56 @@ export default function Player(props: VideoProps) {
   };
 
   const touchDown = () => {
-    isPressingRef.current = true;
-    // 延时一秒后将播放速率设置为2倍
+    isPressingRef.value = true;
     setTimeout(() => {
-      if (isPressingRef.current) {
+      if (isPressHorizonRef.value || isPressVerticalRef.value) {
+        return;
+      }
+
+      if (isPressingRef.value) {
+        isPressRateRef.value = true;
+
+        console.log(
+          '倍速倍速倍速倍速倍速倍速倍速倍速倍速倍速倍速',
+          isPressHorizonRef.value,
+          isPressVerticalRef.value,
+          isPressRateRef.value,
+        );
         setPlaybackRate(2);
       }
     }, 1000);
   };
   const touchUp = () => {
-    isPressingRef.current = false;
+    isPressingRef.value = false;
+    isPressRateRef.value = false;
+    isPressHorizonRef.value = false;
+    isPressVerticalRef.value = false;
     setPlaybackRate(1);
   };
   const defaultPanGesture = Gesture.Pan()
-    .onStart(({velocityY, velocityX}) => {})
-    .onUpdate(({translationY, translationX}) => {})
+    // .onStart(({velocityY, velocityX}) => {
+
+    // })
+    .onUpdate(({translationY, translationX}) => {
+      // 判断手势方向
+      if (Math.abs(translationX) > Math.abs(translationY)) {
+        console.log(isPressVerticalRef.value, isPressRateRef.value);
+        if (isPressVerticalRef.value || isPressRateRef.value) {
+          return;
+        }
+        // 水平手势
+        console.log('Horizontal Gesture:', translationX);
+        isPressHorizonRef.value = true;
+      } else {
+        if (isPressHorizonRef.value || isPressRateRef.value) {
+          return;
+        }
+
+        // 垂直手势
+        console.log('Vertical Gesture:', translationY);
+        isPressVerticalRef.value = true;
+      }
+    })
     .onTouchesDown(() => {
       runOnJS(touchDown)();
       console.log('pan touch');
@@ -284,127 +322,132 @@ export default function Player(props: VideoProps) {
   );
 
   return (
-    <GestureDetector gesture={gesture}>
-      {/* video loading */}
-      <View style={styles.appWrapper}>
-        {isLoading && <Loading text={msg} />}
-        {html && (
-          <>
-            <Video
-              ref={videoPlayerRef}
-              rate={playbackRate}
-              source={{uri: decodeURIComponent(html.videoUrl)}}
-              style={[
-                styles.video,
-                {
-                  width: Dimensions.get('window').width,
-                  height: isLoading ? 0 : Dimensions.get('window').height,
-                },
-              ]}
-              resizeMode="contain"
-              fullscreenAutorotate={true}
-              // controls={true}
-              playInBackground={false}
-              onLoadStart={onVideoLoadStart}
-              onLoad={onVideoLoad}
-              onEnd={onVideoEnd}
-              onProgress={onProgress}
-              paused={paused}
-            />
-            {/* controls */}
-            {isShowControl && (
-              <View
-                style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  height: rpx(130),
-                  width: Dimensions.get('window').width,
-                  alignItems: 'center',
-                  paddingHorizontal: rpx(30),
-                  marginBottom: rpx(0),
-                }}>
-                {duration && duration > 0 && (
-                  <View style={{flexDirection: 'row'}}>
-                    <Text style={{color: '#fff', width: rpx(120)}}>
-                      {formatTime(currentTime)}
-                    </Text>
-                    <Slider
-                      style={{flex: 1}}
-                      minimumValue={0}
-                      value={currentTime}
-                      onSlidingStart={onSlidingStart}
-                      onSlidingComplete={onSlidingComplete}
-                      maximumValue={duration}
-                      minimumTrackTintColor="#FFFFFF"
-                      maximumTrackTintColor="#000000"
-                    />
-                    <Text style={{color: '#fff', width: rpx(120)}}>
-                      {formatTime(duration)}
-                    </Text>
-                  </View>
-                )}
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    height: rpx(120),
-                    width: '100%',
-                  }}>
-                  <View style={{flexDirection: 'row'}}>
-                    <Icon
-                      onPress={() => setPaused(!paused)}
-                      style={{
-                        marginLeft: rpx(10),
-                        paddingVertical: rpx(12),
-                        color: '#fff',
-                      }}
-                      name={
-                        paused ? 'play-circle-outline' : 'pause-circle-outline'
-                      }
-                      size={rpx(70)}
-                    />
-                    <Icon
-                      style={{
-                        marginLeft: rpx(10),
-                        paddingVertical: rpx(12),
-                        color: '#fff',
-                      }}
-                      name="arrow-right-bold-circle-outline"
-                      size={rpx(70)}
-                    />
-                  </View>
-                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                    <Text
-                      style={{
-                        width: rpx(100),
-                        textAlign: 'center',
-                        color: '#fff',
-                      }}>
-                      倍速
-                    </Text>
-                    <Text
-                      style={{
-                        width: rpx(100),
-                        textAlign: 'center',
-                        color: '#fff',
-                      }}>
-                      画面
-                    </Text>
-                    <Text
-                      style={{
-                        width: rpx(100),
-                        textAlign: 'center',
-                        color: '#fff',
-                      }}>
-                      选集
-                    </Text>
-                  </View>
-                </View>
+    <>
+      <GestureDetector gesture={gesture}>
+        {/* video loading */}
+        <View style={styles.appWrapper}>
+          {isLoading && <Loading text={msg} />}
+          {html && (
+            <>
+              <Video
+                ref={videoPlayerRef}
+                rate={playbackRate}
+                source={{uri: decodeURIComponent(html.videoUrl)}}
+                style={[
+                  styles.video,
+                  {
+                    width: Dimensions.get('window').width,
+                    height: isLoading ? 0 : Dimensions.get('window').height,
+                  },
+                ]}
+                resizeMode="contain"
+                fullscreenAutorotate={true}
+                // controls={true}
+                playInBackground={false}
+                onLoadStart={onVideoLoadStart}
+                onLoad={onVideoLoad}
+                onEnd={onVideoEnd}
+                onProgress={onProgress}
+                paused={paused}
+              />
+            </>
+          )}
+        </View>
+      </GestureDetector>
+      <>
+        {/* controls */}
+        {isShowControl && (
+          <View
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              height: rpx(130),
+              width: Dimensions.get('window').width,
+              alignItems: 'center',
+              paddingHorizontal: rpx(30),
+              marginBottom: rpx(0),
+            }}>
+            {duration && duration > 0 && (
+              <View style={{flexDirection: 'row'}}>
+                <Text style={{color: '#fff', width: rpx(120)}}>
+                  {formatTime(currentTime)}
+                </Text>
+                <Slider
+                  style={{flex: 1}}
+                  minimumValue={0}
+                  value={currentTime}
+                  onSlidingStart={onSlidingStart}
+                  onSlidingComplete={onSlidingComplete}
+                  maximumValue={duration}
+                  minimumTrackTintColor="#FFFFFF"
+                  maximumTrackTintColor="#000000"
+                />
+                <Text style={{color: '#fff', width: rpx(120)}}>
+                  {formatTime(duration)}
+                </Text>
               </View>
             )}
-          </>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                height: rpx(120),
+                width: '100%',
+              }}>
+              <View style={{flexDirection: 'row'}}>
+                <Icon
+                  onPress={e => {
+                    resetControlTimeout();
+                    setPaused(!paused);
+                  }}
+                  style={{
+                    marginLeft: rpx(10),
+                    paddingVertical: rpx(12),
+                    color: '#fff',
+                  }}
+                  name={paused ? 'play-circle-outline' : 'pause-circle-outline'}
+                  size={rpx(70)}
+                />
+                <Icon
+                  style={{
+                    marginLeft: rpx(10),
+                    paddingVertical: rpx(12),
+                    color: '#fff',
+                  }}
+                  name="arrow-right-bold-circle-outline"
+                  size={rpx(70)}
+                />
+              </View>
+              <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                <Text
+                  style={{
+                    width: rpx(100),
+                    textAlign: 'center',
+                    color: '#fff',
+                  }}>
+                  倍速
+                </Text>
+                <Text
+                  style={{
+                    width: rpx(100),
+                    textAlign: 'center',
+                    color: '#fff',
+                  }}>
+                  画面
+                </Text>
+                <Text
+                  style={{
+                    width: rpx(100),
+                    textAlign: 'center',
+                    color: '#fff',
+                  }}>
+                  选集
+                </Text>
+              </View>
+            </View>
+          </View>
         )}
-      </View>
-    </GestureDetector>
+      </>
+    </>
   );
 }
