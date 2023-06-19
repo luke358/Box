@@ -1,5 +1,6 @@
 import {StatusBar} from 'react-native';
 import {check, PERMISSIONS, request} from 'react-native-permissions';
+import 'react-native-get-random-values';
 
 import pathConst from '@/constants/pathConst';
 import {checkAndCreateDir} from '@/utils/fileUtils';

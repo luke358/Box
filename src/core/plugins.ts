@@ -132,7 +132,6 @@ class PluginMethods implements IPlugin.IPluginInstanceMethods {
   }: {
     result: string;
   }): IPlugin.ISearchCompleteResult | null {
-    console.log('test');
     return this.plugin?.instance.searchComplete?.({result}) || null;
   }
 
@@ -259,6 +258,7 @@ async function installPluginFromUrl(url: string) {
         return;
       }
       const oldVersionPlugin = plugins.find(p => p.name === plugin.name);
+      console.log('oldddd');
       if (oldVersionPlugin) {
         if (
           compare(
@@ -271,10 +271,17 @@ async function installPluginFromUrl(url: string) {
         }
       }
 
+      console.log('oldddd 000');
+
       if (plugin.hash !== '') {
+        console.log('dddd ', nanoid);
         const fn = nanoid();
+        console.log('000');
         const _pluginPath = `${pathConst.pluginPath}${fn}.js`;
+        console.log('write 1');
+
         await writeFile(_pluginPath, funcCode, 'utf8');
+        console.log('write aft');
         plugin.path = _pluginPath;
         plugins = plugins.concat(plugin);
         if (oldVersionPlugin) {
@@ -291,6 +298,7 @@ async function installPluginFromUrl(url: string) {
   } catch (e: any) {
     // devLog('error', 'URL安装插件失败', e, e?.message);
     // errorLog('URL安装插件失败', e);
+    console.log('eeeeeee', e?.message);
     throw new Error(e?.message ?? '');
   }
 }

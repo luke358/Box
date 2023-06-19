@@ -1,12 +1,16 @@
 import StatusBar from '@/components/base/statusBar';
 import {useNavigate} from '@/entry/router';
 import rpx from '@/utils/rpx';
-import React from 'react';
+import React, {useState} from 'react';
 import {FlatList, StyleSheet} from 'react-native';
 
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {Avatar, FAB, List, Portal} from 'react-native-paper';
+import {Avatar, FAB, List} from 'react-native-paper';
 import PluginManager, {Plugin} from '@/core/plugins';
+import usePanel from '@/components/panels/usePanel';
+import {installPluginFromUrl} from '@/utils/plugins';
+import Toast from '@/utils/toast';
+import Loading from '@/components/base/loading';
 
 const ITEM_HEIGHT = rpx(96);
 
@@ -36,12 +40,31 @@ const styles = StyleSheet.create({
 export default function App() {
   const navigate = useNavigate();
 
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const {showPanel} = usePanel();
   const fabActions = [
     {
       icon: 'link-variant-plus',
       label: '从网络安装插件',
-      async onPress() {},
+      async onPress() {
+        showPanel('SimpleInput', {
+          placeholder: '输入插件URL',
+          maxLength: 120,
+          async onOk(text, closePanel) {
+            setLoading(true);
+            closePanel();
+            const result = await installPluginFromUrl(text.trim());
+            if (result.code === 'success') {
+              Toast.success('插件安装成功');
+            } else {
+              Toast.warn(`部分插件安装失败: ${result.message ?? ''}`);
+            }
+            setLoading(false);
+          },
+        });
+      },
     },
   ];
 
@@ -55,6 +78,7 @@ export default function App() {
   return (
     <SafeAreaView style={styles.appWrapper}>
       <StatusBar />
+      {loading && <Loading />}
       <FlatList
         data={PluginManager.getEnablePlugins()}
         renderItem={({item}) => (
@@ -73,15 +97,13 @@ export default function App() {
           />
         )}
       />
-      <Portal>
-        <FAB.Group
-          open={open}
-          visible
-          icon={open ? 'close' : 'plus'}
-          actions={fabActions}
-          onStateChange={onStateChange}
-        />
-      </Portal>
+      <FAB.Group
+        open={open}
+        visible
+        icon={open ? 'close' : 'plus'}
+        actions={fabActions}
+        onStateChange={onStateChange}
+      />
     </SafeAreaView>
   );
 }

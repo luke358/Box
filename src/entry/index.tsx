@@ -13,6 +13,9 @@ import WebView, {WebViewMessageEvent} from 'react-native-webview';
 import {View} from 'react-native';
 import {WebViewNavigationEvent} from 'react-native-webview/lib/WebViewTypes';
 import {PLUGINS} from '@/plugins/injectJavaScript';
+import Panels from '@/components/panels';
+import toastConfig from '@/components/base/toast';
+import Toast from 'react-native-toast-message';
 
 bootstrap();
 
@@ -66,19 +69,23 @@ const App = () => {
                   />
                 ))}
               </Stack.Navigator>
+
+              <Panels />
+              <Toast config={toastConfig} />
+
+              <View style={{height: 0}}>
+                <WebView
+                  ref={webviewRef}
+                  source={{uri: url}}
+                  userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1"
+                  originWhitelist={['*']}
+                  onMessage={onMessage}
+                  onError={e => console.log(e)}
+                  onLoadEnd={onLoadEnd}
+                  onLoadStart={onLoadStart}
+                />
+              </View>
             </NavigationContainer>
-            <View style={{height: 0}}>
-              <WebView
-                ref={webviewRef}
-                source={{uri: url}}
-                userAgent="Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1"
-                originWhitelist={['*']}
-                onMessage={onMessage}
-                onError={e => console.log(e)}
-                onLoadEnd={onLoadEnd}
-                onLoadStart={onLoadStart}
-              />
-            </View>
           </WebviewContext.Provider>
         </SafeAreaProvider>
       </PaperProvider>
