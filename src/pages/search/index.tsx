@@ -14,7 +14,7 @@ import {
 } from 'react-native-paper';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {WebViewMessageEvent} from 'react-native-webview';
-import {WebviweContext} from '@/entry';
+import {WebviewContext} from '@/entry';
 import Loading from '@/components/base/loading';
 import {useFocusEffect} from '@react-navigation/native';
 import PluginManager from '@/core/plugins';
@@ -37,7 +37,7 @@ const styles = StyleSheet.create({
 });
 
 export default function App() {
-  const webviewContext = useContext(WebviweContext);
+  const webviewContext = useContext(WebviewContext);
 
   const navigate = useNavigate();
   const [html, setHtml] = useState<any>();

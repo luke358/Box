@@ -25,7 +25,7 @@ interface WebviewMethods {
   onMessage?: (e: WebViewMessageEvent) => void;
   onLoadStart?: (e?: WebViewNavigationEvent) => void;
 }
-export const WebviweContext = createContext<{
+export const WebviewContext = createContext<{
   webviewRef: RefObject<WebView>;
   setUrl: React.Dispatch<React.SetStateAction<string>>;
   methodsRef: RefObject<WebviewMethods>;
@@ -50,7 +50,7 @@ const App = () => {
     <GestureHandlerRootView style={{flex: 1}}>
       <PaperProvider>
         <SafeAreaProvider>
-          <WebviweContext.Provider value={{webviewRef, setUrl, methodsRef}}>
+          <WebviewContext.Provider value={{webviewRef, setUrl, methodsRef}}>
             <NavigationContainer>
               <Stack.Navigator
                 screenOptions={{
@@ -80,7 +80,7 @@ const App = () => {
                 onLoadStart={onLoadStart}
               />
             </View>
-          </WebviweContext.Provider>
+          </WebviewContext.Provider>
         </SafeAreaProvider>
       </PaperProvider>
     </GestureHandlerRootView>

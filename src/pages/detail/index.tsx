@@ -1,5 +1,5 @@
 import StatusBar from '@/components/base/statusBar';
-import {WebviweContext} from '@/entry';
+import {WebviewContext} from '@/entry';
 import {useNavigate, useParams} from '@/entry/router';
 import rpx from '@/utils/rpx';
 import React, {useContext, useEffect, useState} from 'react';
@@ -29,7 +29,7 @@ const styles = StyleSheet.create({
 });
 
 export default function Detail() {
-  const webviewContext = useContext(WebviweContext);
+  const webviewContext = useContext(WebviewContext);
 
   const [html, setHtml] = useState<IPlugin.IDetailItem[] | null>();
   const params = useParams<'detail'>();

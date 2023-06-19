@@ -29,7 +29,7 @@ import {runOnJS, useSharedValue} from 'react-native-reanimated';
 import rpx from '@/utils/rpx';
 import {Text} from 'react-native-paper';
 import {formatTime} from '@/utils/video';
-import {WebviweContext} from '@/entry';
+import {WebviewContext} from '@/entry';
 import PluginManager from '@/core/plugins';
 
 const {width, height} = Dimensions.get('window');
@@ -63,7 +63,7 @@ export type VideoProps = VideoProperties & {
 export default function Player(props: VideoProps) {
   const {onCustomPanGesture, doubleTapInterval = 500} = props;
 
-  const webviewContext = useContext(WebviweContext);
+  const webviewContext = useContext(WebviewContext);
 
   const [html, setHtml] = useState<IPlugin.IVideoCompleteResult | null>();
   const [currentTime, setCurrentTime] = useState<number>(0);
