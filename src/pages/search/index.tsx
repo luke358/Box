@@ -82,7 +82,7 @@ export default function App() {
     webviewContext!.methodsRef.current!.onLoadEnd = onLoadEnd;
     webviewContext!.methodsRef.current!.onMessage = onMessage;
     webviewContext!.methodsRef.current!.onLoadStart = onLoadStart;
-    () => {
+    return () => {
       webviewContext!.methodsRef.current!.onLoadEnd = () => {};
       webviewContext!.methodsRef.current!.onMessage = () => {};
       webviewContext!.methodsRef.current!.onLoadStart = () => {};

@@ -66,7 +66,7 @@ export default function Detail() {
 
     webviewContext?.setUrl(params.href);
     webviewContext?.webviewRef.current?.reload();
-    () => {
+    return () => {
       webviewContext!.methodsRef.current!.onLoadEnd = () => {};
       webviewContext!.methodsRef.current!.onMessage = () => {};
       webviewContext!.methodsRef.current!.onLoadStart = () => {};

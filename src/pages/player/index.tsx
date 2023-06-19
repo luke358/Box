@@ -1,9 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-native/no-inline-styles */
 /* eslint-disable react-hooks/exhaustive-deps */
+import SystemSetting from 'react-native-system-setting';
+
 import {useParams} from '@/entry/router';
 import React, {useContext, useEffect, useRef, useState} from 'react';
 import {
+  Alert,
   BackHandler,
   Dimensions,
   StatusBar,
@@ -19,7 +22,7 @@ import {OnProgressData} from 'react-native-video';
 import Slider from '@react-native-community/slider';
 import Loading from '@/components/base/loading';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-
+import {throttle} from 'lodash-es';
 import {
   Gesture,
   GestureDetector,
@@ -67,6 +70,8 @@ export default function Player(props: VideoProps) {
 
   const [html, setHtml] = useState<IPlugin.IVideoCompleteResult | null>();
   const [currentTime, setCurrentTime] = useState<number>(0);
+  const systemRef = useRef({volume: 0, brightness: 0});
+
   const params = useParams<'player'>();
 
   const videoPlayerRef = useRef<Video>(null);
@@ -84,6 +89,7 @@ export default function Player(props: VideoProps) {
   const isPressRateRef = useSharedValue(false);
   const isPressHorizonRef = useSharedValue(false);
   const isPressVerticalRef = useSharedValue(false);
+  const isPressVerticalLeftRef = useSharedValue(false);
 
   const [isShowControl, setIsShowControl] = useState<boolean>(true);
 
@@ -161,20 +167,11 @@ export default function Player(props: VideoProps) {
   const touchDown = () => {
     isPressingRef.value = true;
     setTimeout(() => {
-      if (isPressHorizonRef.value || isPressVerticalRef.value) {
-        return;
-      }
-
-      if (isPressingRef.value) {
-        isPressRateRef.value = true;
-
-        console.log(
-          '倍速倍速倍速倍速倍速倍速倍速倍速倍速倍速倍速',
-          isPressHorizonRef.value,
-          isPressVerticalRef.value,
-          isPressRateRef.value,
-        );
-        setPlaybackRate(2);
+      if (!isPressHorizonRef.value && !isPressVerticalRef.value) {
+        if (isPressingRef.value) {
+          isPressRateRef.value = true;
+          setPlaybackRate(2);
+        }
       }
     }, 1000);
   };
@@ -185,37 +182,73 @@ export default function Player(props: VideoProps) {
     isPressVerticalRef.value = false;
     setPlaybackRate(1);
   };
-  const defaultPanGesture = Gesture.Pan()
-    // .onStart(({velocityY, velocityX}) => {
+  const handleBrightness = (translationY: number) => {
+    const brightnessDelta = -translationY / height; // 根据实际需要调整亮度变化的比例
 
-    // })
-    .onUpdate(({translationY, translationX}) => {
+    // 修改亮度
+    SystemSetting.getBrightness().then(brightness => {
+      SystemSetting.setBrightnessForce(brightness + brightnessDelta).then(
+        success => {
+          console.log(brightness + brightnessDelta);
+          !success &&
+            Alert.alert(
+              'Permission Deny',
+              'You have no permission changing settings',
+              [
+                {text: 'Ok', style: 'cancel'},
+                {
+                  text: 'Open Setting',
+                  onPress: () => SystemSetting.grantWriteSettingPremission(),
+                },
+              ],
+            );
+        },
+      );
+    });
+  };
+  const handleVolume = (translationY: number) => {
+    const volumeDelta = -translationY / height; // 根据实际需要调整声音大小变化的比例
+    SystemSetting.getVolume().then(volume => {
+      SystemSetting.setVolume(volume + volumeDelta);
+    });
+  };
+
+  const defaultPanGesture = Gesture.Pan()
+    .onStart(({x}) => {
+      isPressVerticalLeftRef.value = x < width / 2;
+    })
+    .onUpdate(({translationY, translationX, x}) => {
       // 判断手势方向
       if (Math.abs(translationX) > Math.abs(translationY)) {
-        console.log(isPressVerticalRef.value, isPressRateRef.value);
-        if (isPressVerticalRef.value || isPressRateRef.value) {
-          return;
+        if (!isPressVerticalRef.value && !isPressRateRef.value) {
+          // 水平手势
+          // 每 10 个逻辑像素为一个刻度
+          const progress = Math.floor(
+            Math.min(
+              Math.max(translationX / 10 + currentTime, 0),
+              duration || 3600,
+            ),
+          );
+          // console.log(progress);
+          isPressHorizonRef.value = true;
         }
-        // 水平手势
-        console.log('Horizontal Gesture:', translationX);
-        isPressHorizonRef.value = true;
       } else {
-        if (isPressHorizonRef.value || isPressRateRef.value) {
-          return;
+        if (!isPressHorizonRef.value && !isPressRateRef.value) {
+          // 垂直手势
+          if (isPressVerticalLeftRef.value) {
+            runOnJS(handleBrightness)(translationY);
+          } else {
+            runOnJS(handleVolume)(translationY);
+          }
+          isPressVerticalRef.value = true;
         }
-
-        // 垂直手势
-        console.log('Vertical Gesture:', translationY);
-        isPressVerticalRef.value = true;
       }
     })
     .onTouchesDown(() => {
       runOnJS(touchDown)();
-      console.log('pan touch');
     })
     .onTouchesUp(() => {
       runOnJS(touchUp)();
-      console.log('pan touch end');
     });
 
   const onPanGesture = onCustomPanGesture
@@ -228,12 +261,6 @@ export default function Player(props: VideoProps) {
         runOnJS(setControlTimeout)();
       }
       runOnJS(toggleIsShowControl)();
-      // if (controlViewOpacity.value === 0) {
-      //   controlViewOpacity.value = withTiming(1, controlAnimteConfig);
-      //   setControlTimeout();
-      // } else {
-      //   controlViewOpacity.value = withTiming(0, controlAnimteConfig);
-      // }
     }
   });
 
@@ -241,7 +268,6 @@ export default function Player(props: VideoProps) {
     .numberOfTaps(2)
     .maxDuration(doubleTapInterval)
     .onEnd(({x, y, numberOfPointers}, success) => {
-      console.log(x, y, numberOfPointers, success);
       if (success) {
         if (numberOfPointers !== 1) {
           return;
@@ -283,11 +309,25 @@ export default function Player(props: VideoProps) {
     webviewContext!.methodsRef.current!.onLoadStart = onLoadStart;
     webviewContext!.methodsRef.current!.onLoadEnd = onLoadEnd;
 
-    webviewContext?.setUrl(params.href);
+    SystemSetting.getBrightness().then(brightness => {
+      systemRef.current.brightness = brightness;
+    });
+    SystemSetting.getVolume().then(volume => {
+      systemRef.current.volume = volume;
+    });
+
+    webviewContext?.setUrl(params?.href);
     webviewContext?.webviewRef.current?.reload();
-    () => {
+
+    console.log('tetst', systemRef.current.brightness);
+    return () => {
       webviewContext!.methodsRef.current!.onMessage = () => {};
       webviewContext!.methodsRef.current!.onLoadStart = () => {};
+      webviewContext!.methodsRef.current!.onLoadEnd = () => {};
+
+      console.log(systemRef.current.brightness);
+      SystemSetting.setBrightnessForce(systemRef.current.brightness);
+      SystemSetting.setVolume(systemRef.current.volume);
     };
   }, []);
 
