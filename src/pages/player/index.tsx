@@ -89,7 +89,8 @@ export default function Player(props: VideoProps) {
   const isPressRateRef = useSharedValue(false);
   const isPressHorizonRef = useSharedValue(false);
   const isPressVerticalRef = useSharedValue(false);
-  const isPressVerticalLeftRef = useSharedValue(false);
+  // 0 左， 1 右， 2 顶部三分之一处防止拉取状态栏时影响到亮度和声音
+  const isPressVerticalPart = useSharedValue<0 | 1 | 2 | null>(null);
 
   const [isShowControl, setIsShowControl] = useState<boolean>(true);
 
@@ -189,7 +190,6 @@ export default function Player(props: VideoProps) {
     SystemSetting.getBrightness().then(brightness => {
       SystemSetting.setBrightnessForce(brightness + brightnessDelta).then(
         success => {
-          console.log(brightness + brightnessDelta);
           !success &&
             Alert.alert(
               'Permission Deny',
@@ -214,8 +214,13 @@ export default function Player(props: VideoProps) {
   };
 
   const defaultPanGesture = Gesture.Pan()
-    .onStart(({x}) => {
-      isPressVerticalLeftRef.value = x < width / 2;
+    .onStart(({x, y}) => {
+      console.log('test');
+      if (y < height / 3) {
+        isPressVerticalPart.value = 2;
+      } else {
+        isPressVerticalPart.value = Number(x < width / 2) as 0 | 1;
+      }
     })
     .onUpdate(({translationY, translationX, x}) => {
       // 判断手势方向
@@ -234,10 +239,10 @@ export default function Player(props: VideoProps) {
         }
       } else {
         if (!isPressHorizonRef.value && !isPressRateRef.value) {
-          // 垂直手势
-          if (isPressVerticalLeftRef.value) {
+          // 左边
+          if (isPressVerticalPart.value === 0) {
             runOnJS(handleBrightness)(translationY);
-          } else {
+          } else if (isPressVerticalPart.value === 1) {
             runOnJS(handleVolume)(translationY);
           }
           isPressVerticalRef.value = true;
@@ -319,13 +324,11 @@ export default function Player(props: VideoProps) {
     webviewContext?.setUrl(params?.href);
     webviewContext?.webviewRef.current?.reload();
 
-    console.log('tetst', systemRef.current.brightness);
     return () => {
       webviewContext!.methodsRef.current!.onMessage = () => {};
       webviewContext!.methodsRef.current!.onLoadStart = () => {};
       webviewContext!.methodsRef.current!.onLoadEnd = () => {};
 
-      console.log(systemRef.current.brightness);
       SystemSetting.setBrightnessForce(systemRef.current.brightness);
       SystemSetting.setVolume(systemRef.current.volume);
     };

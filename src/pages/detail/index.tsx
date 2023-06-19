@@ -59,13 +59,17 @@ export default function Detail() {
   };
 
   useEffect(() => {
-    webviewContext?.webviewRef.current?.stopLoading;
-    webviewContext!.methodsRef.current!.onLoadEnd = onLoadEnd;
-    webviewContext!.methodsRef.current!.onMessage = onMessage;
-    webviewContext!.methodsRef.current!.onLoadStart = onLoadStart;
+    // 为什么放到 setTimeout ?
+    // 因为不知道为什么上个页面的 useEffect 的返回值会把这个页面的数据覆盖
+    setTimeout(() => {
+      webviewContext?.webviewRef.current?.stopLoading;
+      webviewContext!.methodsRef.current!.onLoadEnd = onLoadEnd;
+      webviewContext!.methodsRef.current!.onMessage = onMessage;
+      webviewContext!.methodsRef.current!.onLoadStart = onLoadStart;
 
-    webviewContext?.setUrl(params.href);
-    webviewContext?.webviewRef.current?.reload();
+      webviewContext?.setUrl(params.href);
+      webviewContext?.webviewRef.current?.reload();
+    });
     return () => {
       webviewContext!.methodsRef.current!.onLoadEnd = () => {};
       webviewContext!.methodsRef.current!.onMessage = () => {};
