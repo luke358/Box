@@ -215,7 +215,7 @@ export default function Player(props: VideoProps) {
 
   const defaultPanGesture = Gesture.Pan()
     .onStart(({x, y}) => {
-      console.log('test');
+      console.log(y, height / 6);
       if (y < height / 3) {
         isPressVerticalPart.value = 2;
       } else {
