@@ -5,7 +5,7 @@ import React from 'react';
 import {FlatList, StyleSheet} from 'react-native';
 
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {Avatar, List} from 'react-native-paper';
+import {Avatar, FAB, List, Portal} from 'react-native-paper';
 import PluginManager, {Plugin} from '@/core/plugins';
 
 const ITEM_HEIGHT = rpx(96);
@@ -36,6 +36,17 @@ const styles = StyleSheet.create({
 export default function App() {
   const navigate = useNavigate();
 
+  const [open, setOpen] = React.useState(false);
+  const fabActions = [
+    {
+      icon: 'link-variant-plus',
+      label: '从网络安装插件',
+      async onPress() {},
+    },
+  ];
+
+  const onStateChange = ({open: o}: {open: boolean}) => setOpen(o);
+
   const onPress = (item: Plugin) => {
     PluginManager.setCurrentPlugin(item);
     navigate('search');
@@ -62,6 +73,15 @@ export default function App() {
           />
         )}
       />
+      <Portal>
+        <FAB.Group
+          open={open}
+          visible
+          icon={open ? 'close' : 'plus'}
+          actions={fabActions}
+          onStateChange={onStateChange}
+        />
+      </Portal>
     </SafeAreaView>
   );
 }

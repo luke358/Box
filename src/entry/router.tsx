@@ -39,24 +39,6 @@ type IRoutes = {
 
 export const routes: Array<IRoutes> = [
   {
-    path: ROUTE_PATH.ADDRECORD,
-    component: AddRecord,
-  },
-  {
-    path: ROUTE_PATH.DETAIL,
-    component: Detail,
-  },
-  {
-    path: ROUTE_PATH.PLAYER,
-    component: Player,
-  },
-  {
-    path: ROUTE_PATH.SEARCH,
-    component: Search,
-  },
-];
-export const tabs: Array<IRoutes> = [
-  {
     path: ROUTE_PATH.HOME,
     component: Home,
   },
@@ -71,6 +53,22 @@ export const tabs: Array<IRoutes> = [
   {
     path: ROUTE_PATH.MINE,
     component: Mine,
+  },
+  {
+    path: ROUTE_PATH.ADDRECORD,
+    component: AddRecord,
+  },
+  {
+    path: ROUTE_PATH.DETAIL,
+    component: Detail,
+  },
+  {
+    path: ROUTE_PATH.PLAYER,
+    component: Player,
+  },
+  {
+    path: ROUTE_PATH.SEARCH,
+    component: Search,
   },
 ];
 

@@ -1,5 +1,11 @@
+import pathConst from '@/constants/pathConst';
 import CookieManager from '@react-native-cookies/cookies';
+import axios from 'axios';
 import CryptoJs from 'crypto-js';
+import {nanoid} from 'nanoid';
+import {writeFile, unlink, readDir, readFile} from 'react-native-fs';
+import {compare} from 'compare-versions';
+import {ToastAndroid} from 'react-native';
 
 const sha256 = CryptoJs.SHA256;
 
@@ -12,7 +18,7 @@ export enum PluginStateCode {
 
 const packages: Record<string, any> = {
   'crypto-js': CryptoJs,
-
+  axios: axios,
   '@react-native-cookies/cookies': CookieManager,
 };
 const _require = (packageName: string) => {
@@ -92,9 +98,9 @@ export class Plugin {
         _path: '',
         platform: '',
         appVersion: '',
-        searchComplete: () => {
-          return null;
-        },
+        searchComplete: () => null,
+        detailComplete: () => null,
+        videoComplete: () => null,
       };
     }
 
@@ -145,6 +151,7 @@ class PluginMethods implements IPlugin.IPluginInstanceMethods {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 let funcCode = `
 module.exports = {
   platform: '樱花动漫',
@@ -195,14 +202,39 @@ module.exports = {
 
 let plugins: Array<Plugin> = [];
 let currentPlugin: Plugin | null = null;
-export function setup() {
+async function setup() {
   const _plugins: Array<Plugin> = [];
+  try {
+    // 加载插件
+    const pluginsPaths = await readDir(pathConst.pluginPath);
+    for (let i = 0; i < pluginsPaths.length; ++i) {
+      const _pluginUrl = pluginsPaths[i];
+      // trace('初始化插件', _pluginUrl);
+      if (
+        _pluginUrl.isFile() &&
+        (_pluginUrl.name?.endsWith?.('.js') ||
+          _pluginUrl.path?.endsWith?.('.js'))
+      ) {
+        const funcCode = await readFile(_pluginUrl.path, 'utf8');
+        const plugin = new Plugin(funcCode, _pluginUrl.path);
+        const _pluginIndex = _plugins.findIndex(p => p.hash === plugin.hash);
+        if (_pluginIndex !== -1) {
+          // 重复插件，直接忽略
+          continue;
+        }
+        plugin.hash !== '' && _plugins.push(plugin);
+      }
+    }
 
-  const plugin = new Plugin(funcCode, 'xxx');
-
-  console.log(plugin);
-  _plugins.push(plugin);
-  plugins = _plugins;
+    plugins = _plugins;
+    // pluginStateMapper.notify();
+    /** 初始化meta信息 */
+    // PluginMeta.setupMeta(plugins.map(_ => _.name));
+  } catch (e: any) {
+    ToastAndroid.show(`插件初始化失败:${e?.message ?? e}`, ToastAndroid.LONG);
+    // errorLog('插件初始化失败', e?.message);
+    throw e;
+  }
 }
 
 function setCurrentPlugin(plugin: Plugin) {
@@ -216,12 +248,56 @@ function getEnablePlugins() {
   return plugins.filter(_ => _.state === 'enabled' && _.instance.searchUrl);
 }
 
-function installPluginFromUrl() {}
+async function installPluginFromUrl(url: string) {
+  try {
+    const funcCode = (await axios.get(url)).data;
+    if (funcCode) {
+      const plugin = new Plugin(funcCode, '');
+      const _pluginIndex = plugins.findIndex(p => p.hash === plugin.hash);
+      if (_pluginIndex !== -1) {
+        // 静默忽略
+        return;
+      }
+      const oldVersionPlugin = plugins.find(p => p.name === plugin.name);
+      if (oldVersionPlugin) {
+        if (
+          compare(
+            oldVersionPlugin.instance.version ?? '',
+            plugin.instance.version ?? '',
+            '>',
+          )
+        ) {
+          throw new Error('已安装更新版本的插件');
+        }
+      }
+
+      if (plugin.hash !== '') {
+        const fn = nanoid();
+        const _pluginPath = `${pathConst.pluginPath}${fn}.js`;
+        await writeFile(_pluginPath, funcCode, 'utf8');
+        plugin.path = _pluginPath;
+        plugins = plugins.concat(plugin);
+        if (oldVersionPlugin) {
+          plugins = plugins.filter(_ => _.hash !== oldVersionPlugin.hash);
+          try {
+            await unlink(oldVersionPlugin.path);
+          } catch {}
+        }
+        // pluginStateMapper.notify();
+        return;
+      }
+      throw new Error('插件无法解析!');
+    }
+  } catch (e: any) {
+    // devLog('error', 'URL安装插件失败', e, e?.message);
+    // errorLog('URL安装插件失败', e);
+    throw new Error(e?.message ?? '');
+  }
+}
 const PluginManager = {
   setup,
   setCurrentPlugin,
   getCurrentPlugin,
-  currentPlugin,
   getEnablePlugins,
   // installPlugin,
   installPluginFromUrl,

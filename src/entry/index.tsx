@@ -3,7 +3,6 @@ import {Provider as PaperProvider} from 'react-native-paper';
 import {NavigationContainer} from '@react-navigation/native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
-import TabBar from '@/components/tabBar';
 import {
   CardStyleInterpolators,
   createStackNavigator,
@@ -14,10 +13,9 @@ import WebView, {WebViewMessageEvent} from 'react-native-webview';
 import {View} from 'react-native';
 import {WebViewNavigationEvent} from 'react-native-webview/lib/WebViewTypes';
 import {PLUGINS} from '@/plugins/injectJavaScript';
-import {setup} from '@/core/plugins';
 
 bootstrap();
-setup();
+
 const Stack = createStackNavigator<any>();
 
 interface WebviewMethods {
@@ -53,12 +51,13 @@ const App = () => {
           <WebviewContext.Provider value={{webviewRef, setUrl, methodsRef}}>
             <NavigationContainer>
               <Stack.Navigator
+                initialRouteName="home"
                 screenOptions={{
                   headerShown: false,
                   cardStyleInterpolator:
                     CardStyleInterpolators.forHorizontalIOS,
                 }}>
-                <Stack.Screen name={'dashboard'} component={TabBar} />
+                {/* <Stack.Screen name={'dashboard'} component={TabBar} /> */}
                 {routes.map(route => (
                   <Stack.Screen
                     key={route.path}
