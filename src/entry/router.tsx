@@ -4,6 +4,7 @@ import Home from '../pages/home';
 import Detail from '../pages/detail';
 import Player from '../pages/player';
 import Search from '../pages/search';
+import Media from '../pages/media';
 import {LogBox} from 'react-native';
 
 LogBox.ignoreLogs([
@@ -23,6 +24,7 @@ export const ROUTE_PATH = {
   DETAIL: 'detail',
   PLAYER: 'player',
   SEARCH: 'search',
+  MEDIA: 'media',
 } as const;
 
 type Valueof<T> = T[keyof T];
@@ -49,6 +51,10 @@ export const routes: Array<IRoutes> = [
   {
     path: ROUTE_PATH.SEARCH,
     component: Search,
+  },
+  {
+    path: ROUTE_PATH.MEDIA,
+    component: Media,
   },
 ];
 

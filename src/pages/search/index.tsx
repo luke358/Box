@@ -21,6 +21,8 @@ import PluginManager from '@/core/plugins';
 import useColors from '@/hooks/useColors';
 import useTextColor from '@/hooks/useTextColor';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import {fontSizeConst} from '@/constants/uiConst';
+import StatusBar from '@/components/base/statusBar';
 
 export default function App() {
   const webviewContext = useContext(WebviewContext);
@@ -80,6 +82,8 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.appWrapper} edges={['bottom', 'top']}>
+      <StatusBar />
+
       <Appbar style={[styles.appbar, {backgroundColor: colors.primary}]}>
         <Appbar.BackAction
           color={textColor}
@@ -102,6 +106,7 @@ export default function App() {
           value={text}
         />
         <Icon
+          onPress={() => navigate('media')}
           style={{marginHorizontal: rpx(20)}}
           size={30}
           color={textColor}
@@ -161,7 +166,7 @@ const styles = StyleSheet.create({
     padding: 0,
     paddingBottom: rpx(22),
     color: '#666666',
-    fontSize: rpx(26),
+    fontSize: fontSizeConst.subTitle,
     textAlignVertical: 'center',
     includeFontPadding: false,
   },
