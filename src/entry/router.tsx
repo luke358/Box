@@ -65,8 +65,11 @@ interface RouterParams extends RouterParamsBase {
   mine: undefined;
   chart: undefined;
   info: undefined;
-  detail: {href: string; pic: string; title: string};
-  player: {href: string; title: string};
+  detail: IPlugin.ISearchCompleteResultItem;
+  player: {
+    videoInfo: IPlugin.ISearchCompleteResultItem;
+    video: IPlugin.IDetailItem;
+  };
   search: undefined;
 }
 

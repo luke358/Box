@@ -5,11 +5,13 @@ import rpx from '@/utils/rpx';
 import React, {useContext, useEffect, useState} from 'react';
 import {StyleSheet, View} from 'react-native';
 import {ScrollView} from 'react-native-gesture-handler';
-import {Chip, Text} from 'react-native-paper';
+import {Button, Chip, Text} from 'react-native-paper';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {WebViewMessageEvent} from 'react-native-webview';
 import Loading from '@/components/base/loading';
 import PluginManager from '@/core/plugins';
+import {addCollect, getCollect, removeCollect} from '@/storage/collect';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const styles = StyleSheet.create({
   appWrapper: {
@@ -31,17 +33,17 @@ const styles = StyleSheet.create({
 export default function Detail() {
   const webviewContext = useContext(WebviewContext);
 
-  const [html, setHtml] = useState<IPlugin.IDetailItem[] | null>();
+  const [html, setHtml] = useState<IPlugin.IDetailCompleteResult | null>();
   const params = useParams<'detail'>();
   const [isLoading, setIsLoading] = useState(false);
-
+  const [isCollect, setIsCollect] = useState(false);
   const navigate = useNavigate();
 
   const plugin = PluginManager.getCurrentPlugin();
   const injectedJavaScript = plugin?.instance.detailInjectCode || '';
 
-  const handleVideo = (video: any) => {
-    navigate('player', video);
+  const handleVideo = (video: IPlugin.IDetailItem) => {
+    navigate('player', {videoInfo: params, video});
   };
 
   const onLoadEnd = () => {
@@ -61,6 +63,12 @@ export default function Detail() {
   useEffect(() => {
     // 为什么放到 setTimeout ?
     // 因为不知道为什么上个页面的 useEffect 的返回值会把这个页面的数据覆盖
+    getCollect(plugin!.name).then(collectList => {
+      const index = collectList.findIndex(
+        collect => collect.detailUrl === params.href,
+      );
+      setIsCollect(index !== -1);
+    });
     setTimeout(() => {
       webviewContext?.webviewRef.current?.stopLoading;
       webviewContext!.methodsRef.current!.onLoadEnd = onLoadEnd;
@@ -78,10 +86,34 @@ export default function Detail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const handleCollect = async () => {
+    if (isCollect) {
+      const res = await removeCollect(plugin!.name, params.href);
+      if (res) {
+        setIsCollect(false);
+      }
+    } else {
+      const res = await addCollect(plugin!.name, {
+        detailUrl: params.href,
+        pic: params.pic,
+        title: params.title,
+      });
+      if (res) {
+        setIsCollect(true);
+      }
+    }
+  };
+
   return (
     <SafeAreaView style={styles.appWrapper}>
       <StatusBar />
-      <Text>{params.href}</Text>
+      <Button
+        style={{marginTop: rpx(30)}}
+        mode={isCollect ? 'outlined' : 'contained'}
+        onPress={handleCollect}>
+        {isCollect ? '已收藏' : '收藏'}{' '}
+        <Icon size={16} name={isCollect ? 'star' : 'star-outline'} />
+      </Button>
       <ScrollView>
         {isLoading ? (
           <Loading />
@@ -99,7 +131,7 @@ export default function Detail() {
                           flexDirection: 'row',
                           flexWrap: 'wrap',
                         }}>
-                        {groupa.data.map((item: any, idx2: number) => (
+                        {groupa.data.map((item, idx2) => (
                           <View
                             key={`${idx1}-${idx2}`}
                             style={{

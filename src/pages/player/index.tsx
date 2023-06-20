@@ -321,7 +321,7 @@ export default function Player(props: VideoProps) {
       systemRef.current.volume = volume;
     });
 
-    webviewContext?.setUrl(params?.href);
+    webviewContext?.setUrl(params?.video.href);
     webviewContext?.webviewRef.current?.reload();
 
     return () => {

@@ -31,7 +31,7 @@ export default function App() {
   const textColor = useTextColor();
   const navigation = useNavigation();
   const navigate = useNavigate();
-  const [html, setHtml] = useState<any>();
+  const [html, setHtml] = useState<IPlugin.ISearchCompleteResult>();
   const [kw, setKw] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [text, setText] = React.useState('');
@@ -64,7 +64,7 @@ export default function App() {
     webviewContext?.webviewRef.current?.reload();
   }
 
-  function handleDetail(item: any) {
+  function handleDetail(item: IPlugin.ISearchCompleteResultItem) {
     navigate('detail', item);
   }
 
@@ -123,7 +123,7 @@ export default function App() {
             <>
               {html &&
                 html.data &&
-                (html.data as any[]).map(item => (
+                html.data.map(item => (
                   <TouchableRipple
                     key={item.href}
                     onPress={() => handleDetail(item)}>

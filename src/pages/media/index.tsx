@@ -1,8 +1,9 @@
+/* eslint-disable react-native/no-inline-styles */
 import rpx from '@/utils/rpx';
-import React from 'react';
-import {ScrollView, StyleSheet, View} from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {StyleSheet, View} from 'react-native';
 
-import {Appbar, Card} from 'react-native-paper';
+import {Appbar, Card, TouchableRipple} from 'react-native-paper';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import PluginManager from '@/core/plugins';
 import {useNavigation} from '@react-navigation/native';
@@ -11,15 +12,24 @@ import {FlashList} from '@shopify/flash-list';
 import useTextColor from '@/hooks/useTextColor';
 import useColors from '@/hooks/useColors';
 import StatusBar from '@/components/base/statusBar';
+import {ICollect, getCollect} from '@/storage/collect';
 
 export default function App() {
   const navigation = useNavigation();
-
+  const [collect, setCollect] = useState<ICollect[]>([]);
   const colors = useColors();
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const plugin = PluginManager.getCurrentPlugin();
   const textColor = useTextColor();
+
+  useEffect(() => {
+    getCollect(plugin!.name).then(_ => {
+      setCollect(_);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const onPress = (item: ICollect) => {};
   return (
     <SafeAreaView style={styles.appWrapper} edges={['bottom', 'top']}>
       <StatusBar />
@@ -29,44 +39,44 @@ export default function App() {
         <Appbar.BackAction onPress={() => navigation.goBack()} color="#fff" />
         <Appbar.Content
           titleStyle={{fontSize: fontSizeConst.title, color: '#fff'}}
-          title="媒体记录"
+          title={'媒体记录-' + plugin?.name}
         />
       </Appbar.Header>
-
-      <ScrollView>
+      <View style={{flex: 1}}>
         <FlashList
-          estimatedItemSize={300}
+          estimatedItemSize={200}
           numColumns={3}
-          data={[1, 2, 3, 4, 5, 6, 7]}
-          renderItem={({index, item}) => {
+          data={collect}
+          renderItem={({item}) => {
             return (
-              <View style={styles.flashItem}>
+              <TouchableRipple
+                style={styles.flashItem}
+                onPress={() => onPress(item)}>
                 <Card style={styles.flashItemCard}>
                   <Card.Cover
                     style={{height: rpx(300)}}
                     source={{
-                      uri: 'http://css.yhdmtu.me/acg/2021/07/08/20210708063100739.jpg',
+                      uri: item.pic,
                     }}
                   />
                   <Card.Title
-                    titleStyle={{
-                      color: textColor,
-                      fontSize: fontSizeConst.title,
-                    }}
+                    titleStyle={styles.cardTitle}
                     subtitleStyle={{
                       color: textColor,
-                      fontSize: fontSizeConst.subTitle,
+                      fontSize: rpx(22),
+                      marginLeft: rpx(-20),
+                      marginBottom: rpx(-50),
                     }}
-                    style={styles.cardTitle}
-                    title="斗破苍穹年饭"
-                    subtitle="看到10集"
+                    style={styles.cardTitleWrap}
+                    title={item.title}
+                    subtitle={item.index ? `看到${item.index}` : '未观看'}
                   />
                 </Card>
-              </View>
+              </TouchableRipple>
             );
           }}
         />
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -86,8 +96,19 @@ const styles = StyleSheet.create({
   flashItemCard: {
     width: '90%',
   },
-  cardTitle: {
+  cardTitleWrap: {
     position: 'absolute',
     bottom: 0,
+    left: 0,
+    right: 0,
+  },
+  cardTitle: {
+    color: '#fff',
+    fontSize: rpx(26),
+    height: rpx(26),
+    width: '100%',
+    marginLeft: rpx(-20),
+    marginBottom: rpx(-20),
+    includeFontPadding: false,
   },
 });

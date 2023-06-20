@@ -6,14 +6,20 @@ declare namespace IPlugin {
   }
 
   interface IDetailItem {
+    href: string;
     title: string;
-    data: {href: string; title: string}[];
   }
+
+  interface IDetailCompleteResultItem {
+    title: string;
+    data: IDetailItem[];
+  }
+  type IDetailCompleteResult = IDetailCompleteResultItem[];
   type IDetailCompleteFunc = ({
     result,
   }: {
     result: string;
-  }) => IDetailItem[] | null;
+  }) => IDetailCompleteResult | null;
 
   interface IVideoCompleteResult {
     videoUrl: string;

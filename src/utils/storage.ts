@@ -3,12 +3,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export async function setStorage(key: string, value: any) {
   try {
     await AsyncStorage.setItem(key, JSON.stringify(value, null, ''));
+    return true;
   } catch (e: any) {
     // errorLog(`存储失败${key}`, e?.message);
+    return false;
   }
 }
 
-export async function getStorage(key: string) {
+export async function getStorage<T>(key: string): Promise<T | null> {
   try {
     const result = await AsyncStorage.getItem(key);
     if (result) {
