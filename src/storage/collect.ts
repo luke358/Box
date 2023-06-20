@@ -17,7 +17,8 @@ export async function getCollectByDetailUrl(
   pluginName: string,
   detailUrl: string,
 ) {
-  // const coll;
+  const collect = await getCollect(pluginName);
+  return collect.find(c => c.detailUrl === detailUrl);
 }
 
 export async function addCollect(pluginName: string, collect: ICollect) {

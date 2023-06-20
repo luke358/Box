@@ -34,6 +34,9 @@ import {Text} from 'react-native-paper';
 import {formatTime} from '@/utils/video';
 import {WebviewContext} from '@/entry';
 import PluginManager from '@/core/plugins';
+import {addCollect, getCollectByDetailUrl} from '@/storage/collect';
+import Toast from '@/utils/toast';
+import useLatest from '@/hooks/useLatest';
 
 const {width, height} = Dimensions.get('window');
 
@@ -66,10 +69,13 @@ export type VideoProps = VideoProperties & {
 export default function Player(props: VideoProps) {
   const {onCustomPanGesture, doubleTapInterval = 500} = props;
 
+  const timerRef = useRef<number>();
+
   const webviewContext = useContext(WebviewContext);
 
   const [html, setHtml] = useState<IPlugin.IVideoCompleteResult | null>();
   const [currentTime, setCurrentTime] = useState<number>(0);
+  const currentTimeLatestRef = useLatest(currentTime);
   const systemRef = useRef({volume: 0, brightness: 0});
 
   const params = useParams<'player'>();
@@ -132,10 +138,32 @@ export default function Player(props: VideoProps) {
     setIsLoading(true);
   };
 
-  const onVideoLoad = (loadData: OnLoadData) => {
+  const onVideoLoad = async (loadData: OnLoadData) => {
     setDuration(loadData.duration);
     setIsLoading(false);
     setControlTimeout();
+
+    const collect = await getCollectByDetailUrl(
+      plugin!.name,
+      params.videoInfo.href,
+    );
+    // 相同 url 命中历史记录
+    if (
+      collect &&
+      collect?.videoUrl === params.video.href &&
+      collect?.currentTime &&
+      collect?.index
+    ) {
+      Toast.success('定位到上次进度');
+      seekTo(collect.currentTime);
+      setCurrentTime(collect.currentTime);
+    }
+    // 收藏记录定时器，只有收藏的才做记录
+    if (collect) {
+      timerRef.current = setInterval(() => {
+        _addCollect();
+      }, 10000);
+    }
   };
 
   const onVideoEnd = () => {
@@ -307,6 +335,34 @@ export default function Player(props: VideoProps) {
     webviewContext?.webviewRef.current?.injectJavaScript(injectedJavaScript);
     webviewContext?.webviewRef.current?.stopLoading;
   };
+
+  const _addCollect = async () => {
+    const res = await addCollect(plugin!.name, {
+      videoUrl: params?.video?.href,
+      index: params?.video?.title,
+      detailUrl: params?.videoInfo.href,
+      title: params?.videoInfo?.title,
+      pic: params?.videoInfo?.pic,
+      currentTime: currentTimeLatestRef.current,
+    });
+    console.log(res, '保存进度', {
+      videoUrl: params?.video?.href,
+      index: params?.video?.title,
+      detailUrl: params?.videoInfo.href,
+      title: params?.videoInfo?.title,
+      pic: params?.videoInfo?.pic,
+      currentTime: currentTimeLatestRef.current,
+    });
+  };
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        _addCollect();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     webviewContext?.webviewRef.current?.stopLoading;

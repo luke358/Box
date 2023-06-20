@@ -1,12 +1,12 @@
 /* eslint-disable react-native/no-inline-styles */
 import rpx from '@/utils/rpx';
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {StyleSheet, View} from 'react-native';
 
 import {Appbar, Card, TouchableRipple} from 'react-native-paper';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import PluginManager from '@/core/plugins';
-import {useNavigation} from '@react-navigation/native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {fontSizeConst} from '@/constants/uiConst';
 import {FlashList} from '@shopify/flash-list';
 import useTextColor from '@/hooks/useTextColor';
@@ -24,12 +24,14 @@ export default function App() {
   const textColor = useTextColor();
 
   const navigate = useNavigate();
-  useEffect(() => {
-    getCollect(plugin!.name).then(_ => {
-      setCollect(_);
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useFocusEffect(
+    React.useCallback(() => {
+      getCollect(plugin!.name).then(_ => {
+        setCollect(_);
+      });
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []),
+  );
 
   const onPress = (item: ICollect) => {
     navigate('detail', {

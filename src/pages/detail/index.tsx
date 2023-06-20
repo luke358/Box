@@ -14,9 +14,11 @@ import {
   ICollect,
   addCollect,
   getCollect,
+  getCollectByDetailUrl,
   removeCollect,
 } from '@/storage/collect';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import {useFocusEffect} from '@react-navigation/native';
 
 const styles = StyleSheet.create({
   appWrapper: {
@@ -68,14 +70,19 @@ export default function Detail() {
 
   useEffect(() => {
     setIsLoading(true);
-    // 为什么放到 setTimeout ?
-    // 因为不知道为什么上个页面的 useEffect 的返回值会把这个页面的数据覆盖
     getCollect(plugin!.name).then(collectList => {
       const index = collectList.findIndex(
         collect => collect.detailUrl === params.href,
       );
       setIsCollect(index !== -1);
+      setCurrentCollect(collectList[index]);
     });
+
+    //    getCollectByDetailUrl(plugin!.name, params.href).then(c => {
+    //   setCurrentCollect(c);
+    // });
+    // 为什么放到 setTimeout ?
+    // 因为不知道为什么上个页面的 useEffect 的返回值会把这个页面的数据覆盖
     setTimeout(() => {
       webviewContext?.webviewRef.current?.stopLoading;
       webviewContext!.methodsRef.current!.onLoadEnd = onLoadEnd;
@@ -92,6 +99,15 @@ export default function Detail() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      getCollectByDetailUrl(plugin!.name, params.href).then(c => {
+        setCurrentCollect(c);
+      });
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []),
+  );
 
   const handleCollect = async () => {
     if (isCollect) {
@@ -125,6 +141,7 @@ export default function Detail() {
             {isCollect ? '已收藏' : '收藏'}{' '}
             <Icon size={16} name={isCollect ? 'star' : 'star-outline'} />
           </Button>
+          <Text>{currentCollect?.videoUrl}</Text>
           <ScrollView>
             {html &&
               html.map(
@@ -144,7 +161,13 @@ export default function Detail() {
                             style={{
                               width: 100,
                             }}>
-                            <Chip onPress={() => handleVideo(item)}>
+                            <Chip
+                              onPress={() => handleVideo(item)}
+                              mode={
+                                currentCollect?.videoUrl === item.href
+                                  ? 'flat'
+                                  : 'outlined'
+                              }>
                               {item.title}
                             </Chip>
                           </View>
