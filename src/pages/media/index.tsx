@@ -13,6 +13,7 @@ import useTextColor from '@/hooks/useTextColor';
 import useColors from '@/hooks/useColors';
 import StatusBar from '@/components/base/statusBar';
 import {ICollect, getCollect} from '@/storage/collect';
+import {useNavigate} from '@/entry/router';
 
 export default function App() {
   const navigation = useNavigation();
@@ -22,6 +23,7 @@ export default function App() {
   const plugin = PluginManager.getCurrentPlugin();
   const textColor = useTextColor();
 
+  const navigate = useNavigate();
   useEffect(() => {
     getCollect(plugin!.name).then(_ => {
       setCollect(_);
@@ -29,7 +31,13 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const onPress = (item: ICollect) => {};
+  const onPress = (item: ICollect) => {
+    navigate('detail', {
+      href: item.detailUrl,
+      pic: item.pic,
+      title: item.title,
+    });
+  };
   return (
     <SafeAreaView style={styles.appWrapper} edges={['bottom', 'top']}>
       <StatusBar />

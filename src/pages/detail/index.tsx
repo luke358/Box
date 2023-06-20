@@ -10,7 +10,12 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {WebViewMessageEvent} from 'react-native-webview';
 import Loading from '@/components/base/loading';
 import PluginManager from '@/core/plugins';
-import {addCollect, getCollect, removeCollect} from '@/storage/collect';
+import {
+  ICollect,
+  addCollect,
+  getCollect,
+  removeCollect,
+} from '@/storage/collect';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const styles = StyleSheet.create({
@@ -37,6 +42,7 @@ export default function Detail() {
   const params = useParams<'detail'>();
   const [isLoading, setIsLoading] = useState(false);
   const [isCollect, setIsCollect] = useState(false);
+  const [currentCollect, setCurrentCollect] = useState<ICollect>();
   const navigate = useNavigate();
 
   const plugin = PluginManager.getCurrentPlugin();
@@ -61,6 +67,7 @@ export default function Detail() {
   };
 
   useEffect(() => {
+    setIsLoading(true);
     // 为什么放到 setTimeout ?
     // 因为不知道为什么上个页面的 useEffect 的返回值会把这个页面的数据覆盖
     getCollect(plugin!.name).then(collectList => {
@@ -107,18 +114,18 @@ export default function Detail() {
   return (
     <SafeAreaView style={styles.appWrapper}>
       <StatusBar />
-      <Button
-        style={{marginTop: rpx(30)}}
-        mode={isCollect ? 'outlined' : 'contained'}
-        onPress={handleCollect}>
-        {isCollect ? '已收藏' : '收藏'}{' '}
-        <Icon size={16} name={isCollect ? 'star' : 'star-outline'} />
-      </Button>
-      <ScrollView>
-        {isLoading ? (
-          <Loading />
-        ) : (
-          <>
+      {isLoading ? (
+        <Loading />
+      ) : (
+        <>
+          <Button
+            style={{marginTop: rpx(30)}}
+            mode={isCollect ? 'outlined' : 'contained'}
+            onPress={handleCollect}>
+            {isCollect ? '已收藏' : '收藏'}{' '}
+            <Icon size={16} name={isCollect ? 'star' : 'star-outline'} />
+          </Button>
+          <ScrollView>
             {html &&
               html.map(
                 (groupa, idx1) =>
@@ -146,9 +153,9 @@ export default function Detail() {
                     </View>
                   ),
               )}
-          </>
-        )}
-      </ScrollView>
+          </ScrollView>
+        </>
+      )}
     </SafeAreaView>
   );
 }

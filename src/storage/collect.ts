@@ -8,8 +8,16 @@ export interface ICollect {
   videoUrl?: string;
   pic: string;
 }
+
 export async function getCollect(pluginName: string) {
   return (await getStorage<ICollect[]>(`${pluginName}-collect`)) ?? [];
+}
+
+export async function getCollectByDetailUrl(
+  pluginName: string,
+  detailUrl: string,
+) {
+  // const coll;
 }
 
 export async function addCollect(pluginName: string, collect: ICollect) {
