@@ -1,10 +1,6 @@
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {useCallback} from 'react';
 import Home from '../pages/home';
-import Info from '../pages/info';
-import Chart from '../pages/chart';
-import Mine from '../pages/mine';
-import AddRecord from '../pages/addRecord';
 import Detail from '../pages/detail';
 import Player from '../pages/player';
 import Search from '../pages/search';
@@ -41,22 +37,6 @@ export const routes: Array<IRoutes> = [
   {
     path: ROUTE_PATH.HOME,
     component: Home,
-  },
-  {
-    path: ROUTE_PATH.INFO,
-    component: Info,
-  },
-  {
-    path: ROUTE_PATH.CHART,
-    component: Chart,
-  },
-  {
-    path: ROUTE_PATH.MINE,
-    component: Mine,
-  },
-  {
-    path: ROUTE_PATH.ADDRECORD,
-    component: AddRecord,
   },
   {
     path: ROUTE_PATH.DETAIL,

@@ -12,7 +12,6 @@ import bootstrap from './bootstrap';
 import WebView, {WebViewMessageEvent} from 'react-native-webview';
 import {View} from 'react-native';
 import {WebViewNavigationEvent} from 'react-native-webview/lib/WebViewTypes';
-import {PLUGINS} from '@/plugins/injectJavaScript';
 import Panels from '@/components/panels';
 import toastConfig from '@/components/base/toast';
 import Toast from 'react-native-toast-message';
@@ -32,7 +31,6 @@ export const WebviewContext = createContext<{
   methodsRef: RefObject<WebviewMethods>;
 } | null>(null);
 
-export const pluginName: keyof typeof PLUGINS = 'kanjuda';
 const App = () => {
   const webviewRef = useRef<WebView>(null);
   const methodsRef = useRef<WebviewMethods>({});
