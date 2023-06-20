@@ -40,6 +40,8 @@ const styles = StyleSheet.create({
 export default function App() {
   const navigate = useNavigate();
 
+  const plugins = PluginManager.usePlugins();
+
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -80,7 +82,7 @@ export default function App() {
       <StatusBar />
       {loading && <Loading />}
       <FlatList
-        data={PluginManager.getEnablePlugins()}
+        data={plugins}
         renderItem={({item}) => (
           <List.Item
             onPress={() => onPress(item)}

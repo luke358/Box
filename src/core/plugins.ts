@@ -6,6 +6,9 @@ import {nanoid} from 'nanoid';
 import {writeFile, unlink, readDir, readFile} from 'react-native-fs';
 import {compare} from 'compare-versions';
 import {ToastAndroid} from 'react-native';
+import StateMapper from '@/utils/stateMapper';
+
+axios.defaults.timeout = 2000;
 
 const sha256 = CryptoJs.SHA256;
 
@@ -201,6 +204,8 @@ module.exports = {
 
 let plugins: Array<Plugin> = [];
 let currentPlugin: Plugin | null = null;
+const pluginStateMapper = new StateMapper(() => plugins);
+
 async function setup() {
   const _plugins: Array<Plugin> = [];
   try {
@@ -226,7 +231,7 @@ async function setup() {
     }
 
     plugins = _plugins;
-    // pluginStateMapper.notify();
+    pluginStateMapper.notify();
     /** 初始化meta信息 */
     // PluginMeta.setupMeta(plugins.map(_ => _.name));
   } catch (e: any) {
@@ -258,12 +263,12 @@ async function installPluginFromUrl(url: string) {
         return;
       }
       const oldVersionPlugin = plugins.find(p => p.name === plugin.name);
-      console.log('oldddd');
+
       if (oldVersionPlugin) {
         if (
           compare(
-            oldVersionPlugin.instance.version ?? '',
-            plugin.instance.version ?? '',
+            oldVersionPlugin.instance.version ?? '0.0.0',
+            plugin.instance.version ?? '0.0.0',
             '>',
           )
         ) {
@@ -271,17 +276,11 @@ async function installPluginFromUrl(url: string) {
         }
       }
 
-      console.log('oldddd 000');
-
       if (plugin.hash !== '') {
-        console.log('dddd ', nanoid);
         const fn = nanoid();
-        console.log('000');
         const _pluginPath = `${pathConst.pluginPath}${fn}.js`;
-        console.log('write 1');
 
         await writeFile(_pluginPath, funcCode, 'utf8');
-        console.log('write aft');
         plugin.path = _pluginPath;
         plugins = plugins.concat(plugin);
         if (oldVersionPlugin) {
@@ -290,7 +289,7 @@ async function installPluginFromUrl(url: string) {
             await unlink(oldVersionPlugin.path);
           } catch {}
         }
-        // pluginStateMapper.notify();
+        pluginStateMapper.notify();
         return;
       }
       throw new Error('插件无法解析!');
@@ -298,7 +297,6 @@ async function installPluginFromUrl(url: string) {
   } catch (e: any) {
     // devLog('error', 'URL安装插件失败', e, e?.message);
     // errorLog('URL安装插件失败', e);
-    console.log('eeeeeee', e?.message);
     throw new Error(e?.message ?? '');
   }
 }
@@ -307,6 +305,7 @@ const PluginManager = {
   setCurrentPlugin,
   getCurrentPlugin,
   getEnablePlugins,
+  usePlugins: pluginStateMapper.useMappedState,
   // installPlugin,
   installPluginFromUrl,
   // updatePlugin,
