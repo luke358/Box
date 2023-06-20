@@ -22,7 +22,8 @@ export async function getCollectByDetailUrl(
 }
 
 export async function addCollect(pluginName: string, collect: ICollect) {
-  let collectList = await getCollect(`${pluginName}-collect`);
+  let collectList = await getCollect(pluginName);
+
   collectList = [collect].concat(
     collectList.filter(_ => _.detailUrl !== collect.detailUrl),
   );
@@ -30,7 +31,7 @@ export async function addCollect(pluginName: string, collect: ICollect) {
 }
 
 export async function removeCollect(pluginName: string, detailUrl: string) {
-  let collectList = await getCollect(`${pluginName}-collect`);
+  let collectList = await getCollect(pluginName);
   collectList = collectList.filter(_ => _.detailUrl !== detailUrl);
   return await setStorage(`${pluginName}-collect`, collectList);
 }
