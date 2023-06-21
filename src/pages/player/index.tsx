@@ -90,6 +90,8 @@ export default function Player(props: VideoProps) {
   const [paused, setPaused] = useState<boolean>(false);
   const [duration, setDuration] = useState<number>();
   const [playbackRate, setPlaybackRate] = useState(1);
+  const [volume, setVolume] = useState(1);
+  const [brightness, setBrightness] = useState(1);
 
   const isPressingRef = useSharedValue(false);
   const isPressRateRef = useSharedValue(false);
@@ -212,45 +214,30 @@ export default function Player(props: VideoProps) {
     setPlaybackRate(1);
   };
   const handleBrightness = (translationY: number) => {
-    const brightnessDelta = -translationY / height; // 根据实际需要调整亮度变化的比例
-
+    const delta = -translationY * 0.0001; // 调整亮度的步进值
     // 修改亮度
-    SystemSetting.getBrightness().then(brightness => {
-      SystemSetting.setBrightnessForce(brightness + brightnessDelta).then(
-        success => {
-          !success &&
-            Alert.alert(
-              'Permission Deny',
-              'You have no permission changing settings',
-              [
-                {text: 'Ok', style: 'cancel'},
-                {
-                  text: 'Open Setting',
-                  onPress: () => SystemSetting.grantWriteSettingPremission(),
-                },
-              ],
-            );
-        },
-      );
+    SystemSetting.getAppBrightness().then(currentBrightness => {
+      const newBrightness = currentBrightness + delta;
+
+      const clampedBrightness = Math.min(Math.max(newBrightness, 0), 1);
+      SystemSetting.setAppBrightness(clampedBrightness);
+      setBrightness(() => clampedBrightness);
     });
   };
   const handleVolume = (translationY: number) => {
-    const volumeDelta = -translationY / height; // 根据实际需要调整声音大小变化的比例
-    SystemSetting.getVolume().then(volume => {
-      SystemSetting.setVolume(volume + volumeDelta);
-    });
+    const delta = -translationY * 0.0001; // 调整亮度的步进值
+    setVolume(_ => _ + delta);
   };
 
   const defaultPanGesture = Gesture.Pan()
     .onStart(({x, y}) => {
-      console.log(y, height / 6);
-      if (y < height / 3) {
+      if (y < height / 6) {
         isPressVerticalPart.value = 2;
       } else {
         isPressVerticalPart.value = Number(x < width / 2) as 0 | 1;
       }
     })
-    .onUpdate(({translationY, translationX, x}) => {
+    .onUpdate(({translationY, translationX, x, y}) => {
       // 判断手势方向
       if (Math.abs(translationX) > Math.abs(translationY)) {
         if (!isPressVerticalRef.value && !isPressRateRef.value) {
@@ -262,7 +249,6 @@ export default function Player(props: VideoProps) {
               duration || 3600,
             ),
           );
-          // console.log(progress);
           isPressHorizonRef.value = true;
         }
       } else {
@@ -370,12 +356,18 @@ export default function Player(props: VideoProps) {
     webviewContext!.methodsRef.current!.onLoadStart = onLoadStart;
     webviewContext!.methodsRef.current!.onLoadEnd = onLoadEnd;
 
-    SystemSetting.getBrightness().then(brightness => {
-      systemRef.current.brightness = brightness;
+    SystemSetting.getAppBrightness().then(initBrightness => {
+      systemRef.current.brightness = initBrightness;
     });
-    SystemSetting.getVolume().then(volume => {
-      systemRef.current.volume = volume;
+    SystemSetting.getVolume().then(initVolume => {
+      setVolume(initVolume);
     });
+    // SystemSetting.getBrightness().then(brightness => {
+    //   systemRef.current.brightness = brightness;
+    // });
+    // SystemSetting.getVolume().then(volume => {
+    //   systemRef.current.volume = volume;
+    // });
 
     webviewContext?.setUrl(params?.video.href);
     webviewContext?.webviewRef.current?.reload();
@@ -384,9 +376,11 @@ export default function Player(props: VideoProps) {
       webviewContext!.methodsRef.current!.onMessage = () => {};
       webviewContext!.methodsRef.current!.onLoadStart = () => {};
       webviewContext!.methodsRef.current!.onLoadEnd = () => {};
-
-      SystemSetting.setBrightnessForce(systemRef.current.brightness);
-      SystemSetting.setVolume(systemRef.current.volume);
+      SystemSetting.getBrightness().then(b => {
+        SystemSetting.setAppBrightness(b);
+      });
+      // SystemSetting.setBrightnessForce(systemRef.current.brightness);
+      // SystemSetting.setVolume(systemRef.current.volume);
     };
   }, []);
 
@@ -429,6 +423,7 @@ export default function Player(props: VideoProps) {
           {html && (
             <>
               <Video
+                volume={volume}
                 ref={videoPlayerRef}
                 rate={playbackRate}
                 source={{uri: decodeURIComponent(html.videoUrl)}}
@@ -454,6 +449,11 @@ export default function Player(props: VideoProps) {
         </View>
       </GestureDetector>
       <>
+        {/* <View style={{}}>
+          <Text style={{color: 'red'}}>{volume}</Text>
+          <Text style={{color: 'red'}}>{brightness}</Text>
+        </View> */}
+
         {/* controls */}
         {isShowControl && (
           <View
