@@ -193,8 +193,11 @@ export default function Player(props: VideoProps) {
     isPressHorizonRef.value = false;
     isPressVerticalRef.value = false;
     setPlaybackRate(1);
-    setIsChangeVolume(false);
-    setTimeout(() => setIsChangeBrightness(false));
+
+    setTimeout(() => {
+      setIsChangeBrightness(false);
+      setIsChangeVolume(false);
+    });
   };
   const handleBrightness = async (translationY: number) => {
     const delta = -translationY * 0.0001; // 调整亮度的步进值
@@ -208,9 +211,18 @@ export default function Player(props: VideoProps) {
     });
   };
   const handleVolume = (translationY: number) => {
-    // const delta = -translationY * 0.0001; // 调整亮度的步进值
-    // setVolume(_ => _ + delta);
-    // setIsChangeVolume(true);
+    const delta = -translationY * 0.0005; // 调整亮度的步进值
+    SystemSetting.getVolume().then(currentVolume => {
+      console.log(currentVolume);
+      const newVolume = currentVolume + delta;
+      const clampedBrightness = Math.min(Math.max(newVolume, 0), 1);
+
+      // console.log(newVolume, currentVolume);
+      console.log(clampedBrightness);
+      SystemSetting.setVolume(clampedBrightness);
+      setVolume(() => clampedBrightness);
+      setIsChangeVolume(true);
+    });
   };
 
   const defaultPanGesture = Gesture.Pan()
@@ -406,7 +418,6 @@ export default function Player(props: VideoProps) {
           {html && (
             <>
               <Video
-                volume={volume}
                 ref={videoPlayerRef}
                 rate={playbackRate}
                 source={{uri: decodeURIComponent(html.videoUrl)}}
