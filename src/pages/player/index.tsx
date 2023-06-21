@@ -9,6 +9,7 @@ import {
   Alert,
   BackHandler,
   Dimensions,
+  ScaledSize,
   StatusBar,
   StyleSheet,
   View,
@@ -22,7 +23,7 @@ import {OnProgressData} from 'react-native-video';
 import Slider from '@react-native-community/slider';
 import Loading from '@/components/base/loading';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import {throttle} from 'lodash-es';
+
 import {
   Gesture,
   GestureDetector,
@@ -38,29 +39,6 @@ import {addCollect, getCollectByDetailUrl} from '@/storage/collect';
 import Toast from '@/utils/toast';
 import useLatest from '@/hooks/useLatest';
 
-const {width, height} = Dimensions.get('window');
-
-const styles = StyleSheet.create({
-  appWrapper: {
-    flex: 1,
-    backgroundColor: '#000',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  video: {
-    width: height,
-    height: width,
-  },
-  webviewWrapper: {
-    display: 'none',
-  },
-  buttonContainer: {
-    position: 'absolute',
-    top: 20,
-    right: 20,
-  },
-});
-
 export type VideoProps = VideoProperties & {
   onCustomPanGesture?: PanGesture;
   doubleTapInterval?: number;
@@ -73,10 +51,11 @@ export default function Player(props: VideoProps) {
 
   const webviewContext = useContext(WebviewContext);
 
+  const [screenSize, setScreenSize] = useState(Dimensions.get('window'));
+
   const [html, setHtml] = useState<IPlugin.IVideoCompleteResult | null>();
   const [currentTime, setCurrentTime] = useState<number>(0);
   const currentTimeLatestRef = useLatest(currentTime);
-  const systemRef = useRef({volume: 0, brightness: 0});
 
   const params = useParams<'player'>();
 
@@ -90,8 +69,10 @@ export default function Player(props: VideoProps) {
   const [paused, setPaused] = useState<boolean>(false);
   const [duration, setDuration] = useState<number>();
   const [playbackRate, setPlaybackRate] = useState(1);
-  const [volume, setVolume] = useState(1);
-  const [brightness, setBrightness] = useState(1);
+  const [volume, setVolume] = useState(0);
+  const [brightness, setBrightness] = useState(0);
+  const [isChangeVolume, setIsChangeVolume] = useState(false);
+  const [isChangeBrightness, setIsChangeBrightness] = useState(false);
 
   const isPressingRef = useSharedValue(false);
   const isPressRateRef = useSharedValue(false);
@@ -212,29 +193,32 @@ export default function Player(props: VideoProps) {
     isPressHorizonRef.value = false;
     isPressVerticalRef.value = false;
     setPlaybackRate(1);
+    setIsChangeVolume(false);
+    setTimeout(() => setIsChangeBrightness(false));
   };
-  const handleBrightness = (translationY: number) => {
+  const handleBrightness = async (translationY: number) => {
     const delta = -translationY * 0.0001; // 调整亮度的步进值
     // 修改亮度
     SystemSetting.getAppBrightness().then(currentBrightness => {
       const newBrightness = currentBrightness + delta;
-
       const clampedBrightness = Math.min(Math.max(newBrightness, 0), 1);
       SystemSetting.setAppBrightness(clampedBrightness);
       setBrightness(() => clampedBrightness);
+      setIsChangeBrightness(true);
     });
   };
   const handleVolume = (translationY: number) => {
-    const delta = -translationY * 0.0001; // 调整亮度的步进值
-    setVolume(_ => _ + delta);
+    // const delta = -translationY * 0.0001; // 调整亮度的步进值
+    // setVolume(_ => _ + delta);
+    // setIsChangeVolume(true);
   };
 
   const defaultPanGesture = Gesture.Pan()
     .onStart(({x, y}) => {
-      if (y < height / 6) {
+      if (y < screenSize.height / 6) {
         isPressVerticalPart.value = 2;
       } else {
-        isPressVerticalPart.value = Number(x < width / 2) as 0 | 1;
+        isPressVerticalPart.value = Number(x < screenSize.width / 2) as 0 | 1;
       }
     })
     .onUpdate(({translationY, translationX, x, y}) => {
@@ -356,18 +340,13 @@ export default function Player(props: VideoProps) {
     webviewContext!.methodsRef.current!.onLoadStart = onLoadStart;
     webviewContext!.methodsRef.current!.onLoadEnd = onLoadEnd;
 
-    SystemSetting.getAppBrightness().then(initBrightness => {
-      systemRef.current.brightness = initBrightness;
+    SystemSetting.getBrightness().then(b => {
+      setBrightness(b);
     });
+
     SystemSetting.getVolume().then(initVolume => {
       setVolume(initVolume);
     });
-    // SystemSetting.getBrightness().then(brightness => {
-    //   systemRef.current.brightness = brightness;
-    // });
-    // SystemSetting.getVolume().then(volume => {
-    //   systemRef.current.volume = volume;
-    // });
 
     webviewContext?.setUrl(params?.video.href);
     webviewContext?.webviewRef.current?.reload();
@@ -376,11 +355,9 @@ export default function Player(props: VideoProps) {
       webviewContext!.methodsRef.current!.onMessage = () => {};
       webviewContext!.methodsRef.current!.onLoadStart = () => {};
       webviewContext!.methodsRef.current!.onLoadEnd = () => {};
-      SystemSetting.getBrightness().then(b => {
-        SystemSetting.setAppBrightness(b);
-      });
-      // SystemSetting.setBrightnessForce(systemRef.current.brightness);
-      // SystemSetting.setVolume(systemRef.current.volume);
+
+      // app 同步为系统亮度
+      SystemSetting.setAppBrightness(-1);
     };
   }, []);
 
@@ -388,11 +365,17 @@ export default function Player(props: VideoProps) {
     // 在组件挂载时锁定屏幕方向为横屏
     StatusBar.setHidden(true, 'fade');
 
+    const handleDimensionsChange = ({window}: {window: ScaledSize}) => {
+      setScreenSize(window);
+    };
     Orientation.lockToLandscape();
     const backHandler = BackHandler.addEventListener(
       'hardwareBackPress',
       handleBackPress,
     );
+
+    // 订阅屏幕尺寸变化
+    Dimensions.addEventListener('change', handleDimensionsChange);
 
     // 在组件卸载时解除屏幕方向的锁定
     return () => {
@@ -427,13 +410,10 @@ export default function Player(props: VideoProps) {
                 ref={videoPlayerRef}
                 rate={playbackRate}
                 source={{uri: decodeURIComponent(html.videoUrl)}}
-                style={[
-                  styles.video,
-                  {
-                    width: Dimensions.get('window').width,
-                    height: isLoading ? 0 : Dimensions.get('window').height,
-                  },
-                ]}
+                style={{
+                  width: Dimensions.get('window').width,
+                  height: isLoading ? 0 : Dimensions.get('window').height,
+                }}
                 resizeMode="contain"
                 fullscreenAutorotate={true}
                 // controls={true}
@@ -449,10 +429,59 @@ export default function Player(props: VideoProps) {
         </View>
       </GestureDetector>
       <>
-        {/* <View style={{}}>
-          <Text style={{color: 'red'}}>{volume}</Text>
-          <Text style={{color: 'red'}}>{brightness}</Text>
-        </View> */}
+        {/* brightness */}
+        {isChangeBrightness && (
+          <View
+            style={{
+              position: 'absolute',
+              height: Dimensions.get('window').height,
+              left: rpx(60),
+              justifyContent: 'center',
+            }}>
+            <View
+              style={{
+                backgroundColor: '#555',
+                height: '60%',
+                width: rpx(30),
+                justifyContent: 'flex-end',
+              }}>
+              <View
+                style={{
+                  backgroundColor: '#eee',
+                  width: '100%',
+                  height: `${Math.floor(brightness * 100)}%`,
+                }}
+              />
+            </View>
+          </View>
+        )}
+
+        {/* volume */}
+        {isChangeVolume && (
+          <View
+            style={{
+              position: 'absolute',
+              height: Dimensions.get('window').height,
+              right: rpx(60),
+              justifyContent: 'center',
+            }}>
+            <View
+              style={{
+                backgroundColor: '#555',
+                height: '60%',
+                width: rpx(30),
+                justifyContent: 'flex-end',
+              }}>
+              <View
+                style={{
+                  backgroundColor: '#eee',
+                  width: '100%',
+                  height: `${Math.floor(volume * 100)}%`,
+                }}
+              />
+            </View>
+          </View>
+        )}
 
         {/* controls */}
         {isShowControl && (
@@ -460,88 +489,122 @@ export default function Player(props: VideoProps) {
             style={{
               position: 'absolute',
               bottom: 0,
-              height: rpx(130),
+              height: Dimensions.get('window').height,
               width: Dimensions.get('window').width,
               alignItems: 'center',
               paddingHorizontal: rpx(30),
-              marginBottom: rpx(0),
             }}>
-            {duration && duration > 0 && (
-              <View style={{flexDirection: 'row'}}>
-                <Text style={{color: '#fff', width: rpx(120)}}>
-                  {formatTime(currentTime)}
-                </Text>
-                <Slider
-                  style={{flex: 1}}
-                  minimumValue={0}
-                  value={currentTime}
-                  onSlidingStart={onSlidingStart}
-                  onSlidingComplete={onSlidingComplete}
-                  maximumValue={duration}
-                  minimumTrackTintColor="#FFFFFF"
-                  maximumTrackTintColor="#000000"
-                />
-                <Text style={{color: '#fff', width: rpx(120)}}>
-                  {formatTime(duration)}
-                </Text>
-              </View>
-            )}
             <View
               style={{
+                position: 'absolute',
+                top: 0,
+                height: rpx(100),
                 flexDirection: 'row',
                 justifyContent: 'space-between',
-                height: rpx(120),
+                alignItems: 'center',
+                width: '100%',
+                paddingHorizontal: rpx(20),
+              }}>
+              <Icon
+                name="arrow-left"
+                color="#fff"
+                size={rpx(50)}
+                onPress={handleBackPress}
+              />
+              <Text style={{color: '#fff'}}>
+                斗破苍穹年饭-第8集 {screenSize.width}
+              </Text>
+            </View>
+            <View
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                height: rpx(130),
                 width: '100%',
               }}>
-              <View style={{flexDirection: 'row'}}>
-                <Icon
-                  onPress={e => {
-                    resetControlTimeout();
-                    setPaused(!paused);
-                  }}
+              {duration && duration > 0 && (
+                <View style={{flexDirection: 'row'}}>
+                  <Text style={{color: '#fff', width: rpx(120)}}>
+                    {formatTime(currentTime)}
+                  </Text>
+                  <Slider
+                    style={{flex: 1}}
+                    minimumValue={0}
+                    value={currentTime}
+                    onSlidingStart={onSlidingStart}
+                    onSlidingComplete={onSlidingComplete}
+                    maximumValue={duration}
+                    minimumTrackTintColor="#FFFFFF"
+                    maximumTrackTintColor="#000000"
+                  />
+                  <Text style={{color: '#fff', width: rpx(120)}}>
+                    {formatTime(duration)}
+                  </Text>
+                </View>
+              )}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  height: rpx(120),
+                }}>
+                <View style={{flexDirection: 'row'}}>
+                  <Icon
+                    onPress={e => {
+                      resetControlTimeout();
+                      setPaused(!paused);
+                    }}
+                    style={{
+                      marginLeft: rpx(10),
+                      paddingVertical: rpx(12),
+                      color: '#fff',
+                    }}
+                    name={
+                      paused ? 'play-circle-outline' : 'pause-circle-outline'
+                    }
+                    size={rpx(70)}
+                  />
+                  <Icon
+                    style={{
+                      marginLeft: rpx(10),
+                      paddingVertical: rpx(12),
+                      color: '#fff',
+                    }}
+                    name="arrow-right-bold-circle-outline"
+                    size={rpx(70)}
+                  />
+                </View>
+                <View
                   style={{
-                    marginLeft: rpx(10),
-                    paddingVertical: rpx(12),
-                    color: '#fff',
-                  }}
-                  name={paused ? 'play-circle-outline' : 'pause-circle-outline'}
-                  size={rpx(70)}
-                />
-                <Icon
-                  style={{
-                    marginLeft: rpx(10),
-                    paddingVertical: rpx(12),
-                    color: '#fff',
-                  }}
-                  name="arrow-right-bold-circle-outline"
-                  size={rpx(70)}
-                />
-              </View>
-              <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                <Text
-                  style={{
-                    width: rpx(100),
-                    textAlign: 'center',
-                    color: '#fff',
+                    flexDirection: 'row',
+                    alignItems: 'center',
                   }}>
-                  倍速
-                </Text>
-                <Text
-                  style={{
-                    width: rpx(100),
-                    textAlign: 'center',
-                    color: '#fff',
-                  }}>
-                  画面
-                </Text>
-                <Text
-                  style={{
-                    width: rpx(100),
-                    textAlign: 'center',
-                    color: '#fff',
-                  }}>
-                  选集
-                </Text>
+                  <Text
+                    style={{
+                      width: rpx(100),
+                      textAlign: 'center',
+                      color: '#fff',
+                    }}>
+                    倍速
+                  </Text>
+                  <Text
+                    style={{
+                      width: rpx(100),
+                      textAlign: 'center',
+                      color: '#fff',
+                    }}>
+                    画面
+                  </Text>
+                  <Text
+                    style={{
+                      width: rpx(100),
+                      textAlign: 'center',
+                      color: '#fff',
+                    }}>
+                    选集
+                  </Text>
+                </View>
               </View>
             </View>
           </View>
@@ -550,3 +613,20 @@ export default function Player(props: VideoProps) {
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  appWrapper: {
+    flex: 1,
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  webviewWrapper: {
+    display: 'none',
+  },
+  buttonContainer: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+  },
+});
