@@ -71,10 +71,13 @@ export default function Player(props: VideoProps) {
   const [paused, setPaused] = useState<boolean>(false);
   const [duration, setDuration] = useState<number>();
   const [playbackRate, setPlaybackRate] = useState(1);
+  const preRate = useRef(1);
+  const [playLongRate, setLongRate] = useState(2);
   const [volume, setVolume] = useState(0);
   const [brightness, setBrightness] = useState(0);
   const [isChangeVolume, setIsChangeVolume] = useState(false);
   const [isChangeBrightness, setIsChangeBrightness] = useState(false);
+  const [isShowRate, setIsShowRate] = useState(false);
 
   const isPressingRef = useSharedValue(false);
   const isPressRateRef = useSharedValue(false);
@@ -184,17 +187,21 @@ export default function Player(props: VideoProps) {
       if (!isPressHorizonRef.value && !isPressVerticalRef.value) {
         if (isPressingRef.value) {
           isPressRateRef.value = true;
-          setPlaybackRate(2);
+          preRate.current = playbackRate;
+          setPlaybackRate(playLongRate);
         }
       }
     }, 1000);
   };
   const touchUp = () => {
+    if (isPressRateRef.value) {
+      setPlaybackRate(preRate.current);
+    }
+
     isPressingRef.value = false;
     isPressRateRef.value = false;
     isPressHorizonRef.value = false;
     isPressVerticalRef.value = false;
-    setPlaybackRate(1);
 
     setTimeout(() => {
       setIsChangeBrightness(false);
@@ -449,7 +456,13 @@ export default function Player(props: VideoProps) {
         {isChangeVolume && <Volume volume={volume} />}
 
         {/* play rate */}
-        <PlayRate />
+        {isShowRate && (
+          <PlayRate
+            onDismiss={() => setIsShowRate(false)}
+            onOk={rate => setPlaybackRate(rate)}
+            rate={playbackRate}
+          />
+        )}
         {/* controls */}
         {isShowControl && (
           <View
@@ -479,7 +492,7 @@ export default function Player(props: VideoProps) {
                 onPress={handleBackPress}
               />
               <Text style={{color: '#fff'}}>
-                斗破苍穹年饭-第8集 {screenSize.width}
+                {params?.videoInfo?.title}-{params?.video?.title}
               </Text>
             </View>
             <View
@@ -548,12 +561,17 @@ export default function Player(props: VideoProps) {
                     alignItems: 'center',
                   }}>
                   <Text
+                    onPress={() => {
+                      setIsShowRate(true);
+                      setIsShowControl(false);
+                      clearControlTimeout();
+                    }}
                     style={{
                       width: rpx(100),
                       textAlign: 'center',
                       color: '#fff',
                     }}>
-                    倍速
+                    {playbackRate ? `${playbackRate}X` : '倍速'}
                   </Text>
                   <Text
                     style={{
