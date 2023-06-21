@@ -39,6 +39,7 @@ import Toast from '@/utils/toast';
 import useLatest from '@/hooks/useLatest';
 import Volume from './components/Volume';
 import Brightness from './components/Brightness';
+import PlayRate from './components/PlayRate';
 
 export type VideoProps = VideoProperties & {
   onCustomPanGesture?: PanGesture;
@@ -447,6 +448,8 @@ export default function Player(props: VideoProps) {
         {/* volume */}
         {isChangeVolume && <Volume volume={volume} />}
 
+        {/* play rate */}
+        <PlayRate />
         {/* controls */}
         {isShowControl && (
           <View
