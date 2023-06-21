@@ -6,7 +6,6 @@ import SystemSetting from 'react-native-system-setting';
 import {useParams} from '@/entry/router';
 import React, {useContext, useEffect, useRef, useState} from 'react';
 import {
-  Alert,
   BackHandler,
   Dimensions,
   ScaledSize,
@@ -38,6 +37,8 @@ import PluginManager from '@/core/plugins';
 import {addCollect, getCollectByDetailUrl} from '@/storage/collect';
 import Toast from '@/utils/toast';
 import useLatest from '@/hooks/useLatest';
+import Volume from './components/Volume';
+import Brightness from './components/Brightness';
 
 export type VideoProps = VideoProperties & {
   onCustomPanGesture?: PanGesture;
@@ -441,58 +442,10 @@ export default function Player(props: VideoProps) {
       </GestureDetector>
       <>
         {/* brightness */}
-        {isChangeBrightness && (
-          <View
-            style={{
-              position: 'absolute',
-              height: Dimensions.get('window').height,
-              left: rpx(60),
-              justifyContent: 'center',
-            }}>
-            <View
-              style={{
-                backgroundColor: '#555',
-                height: '60%',
-                width: rpx(30),
-                justifyContent: 'flex-end',
-              }}>
-              <View
-                style={{
-                  backgroundColor: '#eee',
-                  width: '100%',
-                  height: `${Math.floor(brightness * 100)}%`,
-                }}
-              />
-            </View>
-          </View>
-        )}
+        {isChangeBrightness && <Brightness brightness={brightness} />}
 
         {/* volume */}
-        {isChangeVolume && (
-          <View
-            style={{
-              position: 'absolute',
-              height: Dimensions.get('window').height,
-              right: rpx(60),
-              justifyContent: 'center',
-            }}>
-            <View
-              style={{
-                backgroundColor: '#555',
-                height: '60%',
-                width: rpx(30),
-                justifyContent: 'flex-end',
-              }}>
-              <View
-                style={{
-                  backgroundColor: '#eee',
-                  width: '100%',
-                  height: `${Math.floor(volume * 100)}%`,
-                }}
-              />
-            </View>
-          </View>
-        )}
+        {isChangeVolume && <Volume volume={volume} />}
 
         {/* controls */}
         {isShowControl && (
@@ -607,6 +560,7 @@ export default function Player(props: VideoProps) {
                     }}>
                     画面
                   </Text>
+                  {/* 从 detail 跳过来的时候可以带过来 */}
                   <Text
                     style={{
                       width: rpx(100),
