@@ -140,7 +140,11 @@ class PluginMethods implements IPlugin.IPluginInstanceMethods {
 
   // type IDetailCompleteFunc = ({result}: {result: string}) => IDetailItem[];
 
-  detailComplete({result}: {result: string}): IPlugin.IDetailItem[] | null {
+  detailComplete({
+    result,
+  }: {
+    result: string;
+  }): IPlugin.IDetailCompleteResult | null {
     return this.plugin?.instance.detailComplete?.({result}) || null;
   }
 
