@@ -15,8 +15,8 @@
 
 ## Screenshots
 
-[首页](/screenshots/home.jpg)
-[搜索](/screenshots/search.jpg)
-[记录](/screenshots/media.jpg)
-[详情](/screenshots/detail.jpg)
-[播放页](/screenshots/player.jpg)
+![首页](/screenshots/home.jpg)
+![搜索](/screenshots/search.jpg)
+![记录](/screenshots/media.jpg)
+![详情](/screenshots/detail.jpg)
+![播放页](/screenshots/player.jpg)
